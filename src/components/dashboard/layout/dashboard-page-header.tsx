@@ -24,26 +24,29 @@ export function DashboardPageHeader({ pageTitle, showBackButton = false }: Dashb
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      {/* Green highlight at the very top */}
+      <Separator className="relative bg-border mb-6 dashboard-header-highlight" />
+      
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-6">
           {shouldShowBack && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBack}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-muted-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{pageTitle}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{pageTitle}</h1>
             <p className="text-muted-foreground">
               {pathname === '/dashboard' && 'Track your carbon footprint and emissions'}
               {pathname.includes('/upload') && 'Upload and process your grocery receipts'}
               {pathname.includes('/history') && 'View your receipt history and emissions data'}
-              {pathname.includes('/settings') && 'Manage your account and preferences'}
+              {pathname.includes('/settings') && 'Manage your emission goals, notifications, and privacy'}
             </p>
           </div>
         </div>
@@ -51,7 +54,6 @@ export function DashboardPageHeader({ pageTitle, showBackButton = false }: Dashb
           <MobileSidebar />
         </div>
       </div>
-      <Separator className="relative bg-border my-8 dashboard-header-highlight" />
     </div>
   );
 }

@@ -2,19 +2,43 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useTheme } from 'next-themes';
+import React from 'react';
 
 // TODO: Replace with actual data from backend API calls
 const mockCategoryData = [
-  { name: 'Meat & Dairy', value: 45, color: '#ef4444' },
-  { name: 'Produce', value: 20, color: '#22c55e' },
-  { name: 'Grains', value: 15, color: '#f59e0b' },
-  { name: 'Packaged Foods', value: 12, color: '#8b5cf6' },
-  { name: 'Beverages', value: 8, color: '#06b6d4' },
+  { name: 'Meat & Dairy', value: 45, color: '#ef4444' }, // red-500
+  { name: 'Produce', value: 20, color: '#22c55e' }, // green-500
+  { name: 'Grains', value: 15, color: '#f59e0b' }, // yellow-500
+  { name: 'Packaged Foods', value: 12, color: '#8b5cf6' }, // purple-500
+  { name: 'Beverages', value: 8, color: '#0ea5e9' }, // sky-500
 ];
 
 interface CategoryBreakdownProps {
   data?: typeof mockCategoryData;
 }
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const { name, value } = payload[0].payload;
+    return (
+      <div
+        style={{
+          background: 'rgba(24, 24, 24, 0.95)',
+          color: '#fff',
+          borderRadius: 8,
+          padding: '10px 16px',
+          fontSize: 16,
+          fontWeight: 600,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}
+      >
+        {name}: {value}%
+      </div>
+    );
+  }
+  return null;
+};
 
 export function CategoryBreakdown({ data = mockCategoryData }: CategoryBreakdownProps) {
   if (data.length === 0) {
@@ -57,21 +81,14 @@ export function CategoryBreakdown({ data = mockCategoryData }: CategoryBreakdown
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px'
-              }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(value: number) => [`${value}%`, 'Emissions']}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend 
               verticalAlign="bottom" 
               height={36}
               wrapperStyle={{
-                fontSize: '12px',
-                color: 'hsl(var(--foreground))'
+                fontSize: '14px',
+                color: 'hsl(var(--foreground))',
+                fontWeight: 500,
               }}
             />
           </PieChart>
