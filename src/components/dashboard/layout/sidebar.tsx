@@ -34,7 +34,7 @@ export function Sidebar() {
         ))}
       </div>
       <div className={'w-full'}>
-          <UserButton />
+          <UserButton/>
       </div>
     </nav>
   );
