@@ -1,8 +1,203 @@
-# Emissionary 🌱
+# Emissionary - Carbon Emission Tracking App
 
-**Track your carbon footprint from grocery receipts with AI-powered emissions calculations.**
+A full-stack application for tracking carbon emissions from receipts using OCR and AI.
 
-Emissionary is a comprehensive carbon emissions tracking application that allows users to upload grocery receipts, extract items via OCR, calculate carbon footprints using AI, and visualize their environmental impact.
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- Node.js 18+ 
+- Python 3.10+
+- pnpm (recommended) or npm
+- Homebrew (for macOS)
+
+### 1. Clone and Setup
+```bash
+git clone <your-repo-url>
+cd emissionary
+```
+
+### 2. Install Dependencies
+
+#### Frontend (Next.js)
+```bash
+pnpm install
+```
+
+#### Backend (Python OCR Service)
+```bash
+cd ocr-service
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Install System Dependencies (macOS)
+```bash
+brew install tesseract
+```
+
+### 4. Start the Services
+
+#### Terminal 1: Python OCR Service
+```bash
+cd ocr-service
+source venv/bin/activate
+python start.py
+```
+**Expected output:** `INFO: Uvicorn running on http://0.0.0.0:8000`
+
+#### Terminal 2: Next.js Frontend
+```bash
+cd emissionary  # Back to project root
+pnpm dev
+```
+**Expected output:** `Ready - started server on 0.0.0.0:3000`
+
+### 5. Verify Everything is Working
+
+#### Test OCR Service
+```bash
+curl http://127.0.0.1:8000/health
+```
+**Expected output:** `{"status":"healthy","service":"OCR-PaddleOCR","groq_configured":true}`
+
+#### Test Next.js API
+```bash
+curl http://localhost:3000/api/ocr
+```
+**Expected output:** `{"success":true,"data":{"status":"healthy","service":"OCR-PaddleOCR","timestamp":"..."}}`
+
+#### Open the Application
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- OCR API: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Next.js       │    │   Python OCR    │    │   Supabase      │
+│   Frontend      │◄──►│   Service       │    │   Database      │
+│   (Port 3000)   │    │   (Port 8000)   │    │   (External)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+Create a `.env.local` file in the project root:
+
+```env
+# OCR Service
+OCR_SERVICE_URL=http://127.0.0.1:8000
+
+# Database (Supabase)
+DATABASE_URL=your_supabase_database_url
+
+# Authentication (Clerk)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
+CLERK_SECRET_KEY=your_clerk_secret
+
+# Optional: Groq API for enhanced OCR
+GROQ_API_KEY=your_groq_api_key
+```
+
+## 🐛 Troubleshooting
+
+### OCR Service Won't Start
+1. **Port already in use:**
+   ```bash
+   lsof -i :8000
+   kill -9 <PID>
+   ```
+
+2. **Missing dependencies:**
+   ```bash
+   cd ocr-service
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. **Tesseract not found:**
+   ```bash
+   brew install tesseract  # macOS
+   # or
+   sudo apt-get install tesseract-ocr  # Ubuntu
+   ```
+
+### Next.js Can't Connect to OCR Service
+1. **Check if OCR service is running:**
+   ```bash
+   curl http://127.0.0.1:8000/health
+   ```
+
+2. **Verify environment variable:**
+   ```bash
+   echo $OCR_SERVICE_URL
+   ```
+
+3. **Restart both services** in the correct order:
+   - Start OCR service first
+   - Then start Next.js
+
+### Database Issues
+1. **Generate Prisma client:**
+   ```bash
+   pnpm db:generate
+   ```
+
+2. **Push schema changes:**
+   ```bash
+   pnpm db:push
+   ```
+
+## 📁 Project Structure
+
+```
+emissionary/
+├── src/
+│   ├── app/                 # Next.js app router
+│   ├── components/          # React components
+│   └── lib/                # Utilities and services
+├── ocr-service/            # Python OCR microservice
+├── prisma/                # Database schema
+└── public/                # Static assets
+```
+
+## 🚀 Deployment
+
+### OCR Service
+- Deploy to any Python hosting service (Railway, Render, etc.)
+- Set environment variables
+- Update `OCR_SERVICE_URL` in Next.js
+
+### Next.js Frontend
+- Deploy to Vercel, Netlify, or similar
+- Set all environment variables
+- Ensure OCR service is accessible
+
+## 📝 API Endpoints
+
+### OCR Service (Python)
+- `GET /health` - Health check
+- `POST /ocr` - Process receipt image
+- `POST /upload` - Upload receipt file
+
+### Next.js API
+- `GET /api/ocr` - Health check
+- `POST /api/ocr` - Process receipt
+- `POST /api/calculate-emissions` - Calculate emissions
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
 
 ## ✨ Features
 
@@ -13,15 +208,6 @@ Emissionary is a comprehensive carbon emissions tracking application that allows
 - **🇨🇦 Canadian Focus**: Compare your emissions with Canadian averages
 - **🔐 Secure Authentication**: Built-in user management with Clerk
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile
-
-## 🏗️ Architecture
-
-- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, and shadcn/ui
-- **Backend**: Next.js API routes with Prisma ORM
-- **Database**: PostgreSQL with Supabase
-- **OCR Service**: Python FastAPI microservice with EasyOCR
-- **Authentication**: Clerk (email + GitHub OAuth)
-- **Charts**: Recharts for data visualization
 
 ## 🚀 Quick Start
 

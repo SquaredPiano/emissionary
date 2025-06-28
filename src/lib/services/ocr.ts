@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 export class OCRService {
-  private static readonly OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://10.17.95.232:8000";
+  private static readonly OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8000";
   private static readonly TIMEOUT_MS = 30000; // 30 seconds
 
   /**
@@ -20,6 +20,17 @@ export class OCRService {
         throw new Error("Invalid file type. Only images and PDFs are supported.");
       }
 
+      // Validate image buffer
+      if (!imageBuffer || imageBuffer.length === 0) {
+        throw new Error("Empty image buffer provided.");
+      }
+
+      // Check OCR service health first
+      const isHealthy = await this.checkHealth();
+      if (!isHealthy) {
+        throw new Error("OCR service is not available. Please try again later.");
+      }
+
       // Convert to base64
       const base64Image = imageBuffer.toString("base64");
 
@@ -29,6 +40,8 @@ export class OCRService {
         image_type: imageType,
         user_id: userId,
       };
+
+      logger.info("Processing receipt through OCR service", { userId, imageType, bufferSize: imageBuffer.length });
 
       // Call OCR service
       const response = await fetch(`${this.OCR_SERVICE_URL}/ocr`, {
@@ -45,11 +58,13 @@ export class OCRService {
         logger.error("OCR service error", new Error(`${response.status}: ${errorText}`), { userId, status: response.status });
         
         if (response.status === 413) {
-          throw new Error("Image file too large. Please use a smaller image.");
+          throw new Error("Image file too large. Please use a smaller image (max 10MB).");
         } else if (response.status === 400) {
           throw new Error("Invalid image format. Please check your file.");
         } else if (response.status === 503) {
           throw new Error("OCR service temporarily unavailable. Please try again later.");
+        } else if (response.status === 404) {
+          throw new Error("OCR service endpoint not found. Please check service configuration.");
         } else {
           throw new Error(`OCR processing failed: ${response.status} ${response.statusText}`);
         }
@@ -68,6 +83,13 @@ export class OCRService {
       if (validatedResult.confidence < 0.1) {
         logger.warn("Low OCR confidence", { userId, confidence: validatedResult.confidence });
       }
+
+      logger.info("OCR processing completed successfully", { 
+        userId, 
+        confidence: validatedResult.confidence,
+        itemsCount: validatedResult.items?.length || 0,
+        processingTime: validatedResult.processing_time
+      });
 
       return validatedResult;
     } catch (error) {
@@ -158,19 +180,40 @@ export class OCRService {
    */
   static async checkHealth(): Promise<boolean> {
     try {
+      logger.info("Checking OCR service health", { url: this.OCR_SERVICE_URL });
+      
       const response = await fetch(`${this.OCR_SERVICE_URL}/health`, {
         method: "GET",
         signal: AbortSignal.timeout(5000), // 5 second timeout for health check
       });
 
+      logger.info("OCR health check response", { 
+        status: response.status, 
+        ok: response.ok,
+        url: this.OCR_SERVICE_URL 
+      });
+
       if (!response.ok) {
+        const error = new Error(`OCR health check failed: ${response.status} ${response.statusText}`);
+        logger.error("OCR health check failed", error, { 
+          status: response.status, 
+          statusText: response.statusText,
+          url: this.OCR_SERVICE_URL 
+        });
         return false;
       }
 
       const healthData = await response.json();
-      return healthData.status === "healthy";
+      logger.info("OCR health check data", { healthData });
+      
+      const isHealthy = healthData.status === "healthy";
+      logger.info("OCR service health status", { isHealthy, status: healthData.status });
+      
+      return isHealthy;
     } catch (error) {
-      logger.error("OCR health check failed", error instanceof Error ? error : new Error(String(error)));
+      logger.error("OCR health check failed", error instanceof Error ? error : new Error(String(error)), { 
+        url: this.OCR_SERVICE_URL 
+      });
       return false;
     }
   }

@@ -13,6 +13,11 @@ from PIL import Image
 import numpy as np
 import cv2
 import pytesseract
+import requests
+from dotenv import load_dotenv
+from carbon_footprint_db import get_carbon_footprint, categorize_food_item, estimate_quantity_from_name
+import time
+load_dotenv()
 
 # --- Logging ---
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +44,11 @@ class ReceiptItem(BaseModel):
     unit_price: Optional[float] = None
     total_price: Optional[float] = None
 
+class EnhancedReceiptItem(ReceiptItem):
+    carbon_emissions: Optional[float] = None
+    category: Optional[str] = None
+    confidence: Optional[float] = None
+
 class OCRResponse(BaseModel):
     success: bool
     text: str = ""
@@ -47,6 +57,13 @@ class OCRResponse(BaseModel):
     total: Optional[float] = None
     date: Optional[str] = None
     error_message: Optional[str] = None
+
+class EnhancedOCRResponse(OCRResponse):
+    items: Optional[List[EnhancedReceiptItem]] = None
+    total_carbon_emissions: Optional[float] = None
+    llm_enhanced: Optional[bool] = False
+    processing_time: Optional[float] = None
+    raw_ocr_data: Optional[Any] = None
 
 # --- Preprocessing ---
 def preprocess_image(image: Image.Image, debug: bool = False) -> Image.Image:
@@ -126,33 +143,80 @@ def parse_receipt(text: str) -> Dict[str, Any]:
     return dict(merchant=merchant, date=date, total=total, items=items)
 
 # --- API Endpoints ---
-@app.post("/ocr", response_model=OCRResponse)
+@app.post("/ocr", response_model=EnhancedOCRResponse)
 async def ocr_endpoint(request: OCRRequest):
+    start_time = time.time()
     try:
-        # Decode base64
         img_data = request.image.split(',')[-1]
         img_bytes = base64.b64decode(img_data)
         image = Image.open(io.BytesIO(img_bytes))
         pre_img = preprocess_image(image, debug=True)
         text = ocr_image(pre_img)
         parsed = parse_receipt(text)
-        return OCRResponse(success=True, text=text, **parsed)
+        items = parsed.get('items', [])
+        llm_enhanced = False
+        enhanced_items = []
+        if items:
+            llm_items = call_groq_llm(items, text)
+            if llm_items:
+                enhanced_items = llm_items
+                llm_enhanced = True
+            else:
+                enhanced_items = fallback_carbon(items)
+        total_carbon = sum(item.carbon_emissions or 0 for item in enhanced_items)
+        processing_time = time.time() - start_time
+        return EnhancedOCRResponse(
+            success=True,
+            text=text,
+            items=enhanced_items,
+            merchant=parsed.get('merchant'),
+            total=parsed.get('total'),
+            date=parsed.get('date'),
+            total_carbon_emissions=total_carbon,
+            llm_enhanced=llm_enhanced,
+            processing_time=processing_time,
+            raw_ocr_data=None
+        )
     except Exception as e:
         logger.error(f"OCR error: {e}")
-        return OCRResponse(success=False, error_message=str(e))
+        return EnhancedOCRResponse(success=False, error_message=str(e))
 
-@app.post("/upload", response_model=OCRResponse)
+@app.post("/upload", response_model=EnhancedOCRResponse)
 async def upload_endpoint(file: UploadFile = File(...)):
+    start_time = time.time()
     try:
         img_bytes = await file.read()
         image = Image.open(io.BytesIO(img_bytes))
         pre_img = preprocess_image(image, debug=True)
         text = ocr_image(pre_img)
         parsed = parse_receipt(text)
-        return OCRResponse(success=True, text=text, **parsed)
+        items = parsed.get('items', [])
+        llm_enhanced = False
+        enhanced_items = []
+        if items:
+            llm_items = call_groq_llm(items, text)
+            if llm_items:
+                enhanced_items = llm_items
+                llm_enhanced = True
+            else:
+                enhanced_items = fallback_carbon(items)
+        total_carbon = sum(item.carbon_emissions or 0 for item in enhanced_items)
+        processing_time = time.time() - start_time
+        return EnhancedOCRResponse(
+            success=True,
+            text=text,
+            items=enhanced_items,
+            merchant=parsed.get('merchant'),
+            total=parsed.get('total'),
+            date=parsed.get('date'),
+            total_carbon_emissions=total_carbon,
+            llm_enhanced=llm_enhanced,
+            processing_time=processing_time,
+            raw_ocr_data=None
+        )
     except Exception as e:
         logger.error(f"Upload error: {e}")
-        return OCRResponse(success=False, error_message=str(e))
+        return EnhancedOCRResponse(success=False, error_message=str(e))
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -180,12 +244,122 @@ def cli_main():
     image = Image.open(args.image_path)
     pre_img = preprocess_image(image, debug=True)
     text = ocr_image(pre_img)
+    parsed = parse_receipt(text)
+    items = parsed.get('items', [])
+    llm_enhanced = False
+    enhanced_items = []
+    if items:
+        llm_items = call_groq_llm(items, text)
+        if llm_items:
+            enhanced_items = llm_items
+            llm_enhanced = True
+        else:
+            enhanced_items = fallback_carbon(items)
+    total_carbon = sum(item.carbon_emissions or 0 for item in enhanced_items)
     print("\n--- OCR TEXT ---\n")
     print(text)
-    print("\n--- PARSED RECEIPT ---\n")
-    parsed = parse_receipt(text)
-    for k, v in parsed.items():
-        print(f"{k}: {v}")
+    print("\n--- FINAL JSON ---\n")
+    import json
+    print(json.dumps({
+        "success": True,
+        "text": text,
+        "items": [item.dict() for item in enhanced_items],
+        "merchant": parsed.get('merchant'),
+        "total": parsed.get('total'),
+        "date": parsed.get('date'),
+        "total_carbon_emissions": total_carbon,
+        "llm_enhanced": llm_enhanced
+    }, indent=2, default=str))
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+def call_groq_llm(items: List[ReceiptItem], receipt_text: str) -> Optional[List[EnhancedReceiptItem]]:
+    if not GROQ_API_KEY:
+        return None
+    try:
+        items_data = [item.dict() for item in items]
+        prompt = f"""
+You are an expert in calculating carbon footprints for food items. Analyze the following receipt items and provide accurate carbon emissions data.
+
+Receipt Text:
+{receipt_text}
+
+Current Items:
+{items_data}
+
+For each item, provide:
+1. Corrected item name (if OCR made errors)
+2. Accurate quantity (in kg or appropriate units)
+3. Carbon footprint in kg CO2e (based on scientific data)
+4. Food category (meat, dairy, fruits, vegetables, grains, seafood, nuts, beverages, processed)
+5. Confidence level (0.0-1.0)
+
+Return a JSON array with enhanced items. Each item should have:
+- name: corrected item name
+- quantity: quantity in kg
+- carbon_emissions: carbon footprint in kg CO2e
+- category: food category
+- confidence: confidence level (0.0-1.0)
+"""
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "llama3-70b-8192",
+            "messages": [
+                {"role": "system", "content": "You are an expert in food carbon footprint calculation. Provide accurate, scientific data in JSON format."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.1,
+            "max_tokens": 2000
+        }
+        response = requests.post(GROQ_API_URL, headers=headers, json=data, timeout=30)
+        if response.status_code == 200:
+            result = response.json()
+            content = result['choices'][0]['message']['content']
+            import json as pyjson
+            try:
+                json_match = re.search(r'\[.*\]', content, re.DOTALL)
+                if json_match:
+                    enhanced_data = pyjson.loads(json_match.group(0))
+                    enhanced_items = []
+                    for i, enhanced_item in enumerate(enhanced_data):
+                        enhanced_items.append(EnhancedReceiptItem(
+                            name=enhanced_item.get('name', items[i].name if i < len(items) else 'Unknown'),
+                            quantity=enhanced_item.get('quantity', 1.0),
+                            unit_price=items[i].unit_price if i < len(items) else None,
+                            total_price=items[i].total_price if i < len(items) else None,
+                            carbon_emissions=enhanced_item.get('carbon_emissions', 0.0),
+                            category=enhanced_item.get('category', 'processed'),
+                            confidence=enhanced_item.get('confidence', 0.8)
+                        ))
+                    return enhanced_items
+            except Exception as e:
+                logger.error(f"Failed to parse Groq LLM response: {e}")
+        logger.warning("Groq LLM enhancement failed, using fallback calculation")
+        return None
+    except Exception as e:
+        logger.error(f"Groq LLM API error: {e}")
+        return None
+
+def fallback_carbon(items: List[ReceiptItem]) -> List[EnhancedReceiptItem]:
+    enhanced = []
+    for item in items:
+        q = item.quantity if item.quantity else estimate_quantity_from_name(item.name)
+        carbon = get_carbon_footprint(item.name, q)
+        cat = categorize_food_item(item.name)
+        enhanced.append(EnhancedReceiptItem(
+            name=item.name,
+            quantity=q,
+            unit_price=item.unit_price,
+            total_price=item.total_price,
+            carbon_emissions=carbon,
+            category=cat,
+            confidence=1.0
+        ))
+    return enhanced
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
