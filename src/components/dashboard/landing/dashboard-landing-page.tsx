@@ -6,20 +6,20 @@ import { ActionableTips } from '@/components/dashboard/landing/components/action
 
 export function DashboardLandingPage() {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-10 w-full max-w-7xl mx-auto px-4 pb-12">
       {/* KPI Cards Row */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardUsageCardGroup />
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <EmissionsChart />
         <CategoryBreakdown />
       </div>
 
       {/* Activity and Tips Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <RecentActivity />
         <ActionableTips />
       </div>

@@ -7,6 +7,8 @@
 :root {
   --background: hsl(0 0% 100%);
   --foreground: hsl(240 5% 96%);
+  --sidebar-background: hsl(220 20% 98%);
+  --sidebar-foreground: hsl(222.2 47.4% 11.2%);
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(222.2 84% 4.9%);
   --popover: hsl(0 0% 100%);
@@ -35,6 +37,8 @@
 .dark {
   --background: hsl(180 18% 7%);
   --foreground: hsl(240 5% 96%);
+  --sidebar-background: hsl(220 10% 12%);
+  --sidebar-foreground: hsl(0 0% 100%);
   --card: hsl(222.2 84% 4.9%);
   --card-foreground: hsl(210 40% 98%);
   --popover: hsl(222.2 84% 4.9%);
@@ -57,6 +61,21 @@
   --chart-3: hsl(30 80% 55%);
   --chart-4: hsl(280 65% 60%);
   --chart-5: hsl(340 75% 55%);
+}
+
+.text-sidebar-foreground {
+  color: var(--sidebar-foreground);
+}
+.bg-sidebar-background {
+  background-color: var(--sidebar-background);
+}
+
+.text-muted-foreground {
+  color: hsl(215.4 16.3% 36.9%) !important;
+}
+
+.text-secondary {
+  color: hsl(215.4 16.3% 36.9%) !important;
 }
 
 @utility container {

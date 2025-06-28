@@ -13,6 +13,8 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { ThemeProvider } from 'next-themes';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,9 +42,18 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className='dark flex items-center justify-center'>
+      <html lang="en" className='dark flex items-center justify-center' suppressHydrationWarning>
         <body className={inter.className}>
-          {children}
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <div className="min-h-screen flex flex-col bg-background text-foreground">
+              {/* Top bar with user button and theme toggle */}
+              <div className="w-full flex justify-end items-center gap-4 px-6 py-4 bg-transparent z-50">
+                <ThemeToggle />
+                <UserButton afterSignOutUrl="/" />
+              </div>
+              <main className="flex-1 flex flex-col">{children}</main>
+            </div>
+          </ThemeProvider>
           <Toaster />
         </body>
       </html>
