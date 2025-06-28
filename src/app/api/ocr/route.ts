@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { OCRService } from '@/lib/services/ocr';
+import { OCRResponseSchema } from '@/lib/schemas';
 import { z } from 'zod';
 
-// OCR response schema
-const OCRResponseSchema = z.object({
-  success: z.boolean(),
-  text: z.string(),
-  confidence: z.number().min(0).max(1),
-  items: z.array(z.object({
-    name: z.string(),
-    quantity: z.number(),
-    unitPrice: z.number(),
-    totalPrice: z.number(),
-    category: z.string().optional(),
-    brand: z.string().optional(),
-  })).optional(),
-  merchant: z.string().optional(),
-  total: z.number().optional(),
-  date: z.string().optional(),
+// Request validation schema
+const OCRRequestSchema = z.object({
+  image: z.string().min(1),
+  image_type: z.string().min(1),
+  user_id: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -25,72 +16,111 @@ export async function POST(request: NextRequest) {
     // Check authentication
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Parse request body
-    const formData = await request.formData();
-    const imageFile = formData.get('image') as File;
-    
-    if (!imageFile) {
-      return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
-    }
-
-    // Validate file type
-    if (!imageFile.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Invalid file type. Please upload an image.' }, { status: 400 });
-    }
-
-    // Convert image to base64
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
-
-    // Call Python OCR microservice
-    const ocrServiceUrl = process.env.OCR_SERVICE_URL || 'http://localhost:8000';
-    
-    const response = await fetch(`${ocrServiceUrl}/ocr`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image: base64Image,
-        image_type: imageFile.type,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('OCR service error:', response.status, response.statusText);
       return NextResponse.json(
-        { error: 'OCR processing failed' },
-        { status: 500 }
+        { success: false, error: 'Unauthorized' }, 
+        { status: 401 }
       );
     }
 
-    const ocrResult = await response.json();
-    
+    // Parse and validate request body
+    const body = await request.json();
+    const validatedBody = OCRRequestSchema.parse(body);
+
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(validatedBody.image, 'base64');
+
+    // Process through OCR service
+    const ocrResult = await OCRService.processReceiptImage(
+      imageBuffer,
+      validatedBody.image_type,
+      validatedBody.user_id
+    );
+
     // Validate OCR response
     const validatedResult = OCRResponseSchema.parse(ocrResult);
 
-    return NextResponse.json(validatedResult);
+    return NextResponse.json({
+      success: true,
+      data: validatedResult,
+    });
 
   } catch (error) {
     console.error('OCR API error:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid OCR response format' },
+        { 
+          success: false, 
+          error: 'Invalid request format',
+          details: error.errors.map(e => e.message)
+        },
+        { status: 400 }
+      );
+    }
+
+    if (error instanceof Error) {
+      // Handle specific error types
+      if (error.message.includes('file too large')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 413 }
+        );
+      }
+      
+      if (error.message.includes('Invalid file type')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 400 }
+        );
+      }
+      
+      if (error.message.includes('OCR service temporarily unavailable')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 503 }
+        );
+      }
+      
+      return NextResponse.json(
+        { success: false, error: error.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
 export async function GET() {
-  return NextResponse.json({ message: 'OCR API endpoint' });
+  try {
+    // Health check endpoint
+    const isHealthy = await OCRService.checkHealth();
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        status: isHealthy ? 'healthy' : 'unhealthy',
+        service: 'OCR-PaddleOCR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('OCR health check error:', error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Health check failed',
+        data: {
+          status: 'unhealthy',
+          service: 'OCR-PaddleOCR',
+          timestamp: new Date().toISOString(),
+        }
+      },
+      { status: 503 }
+    );
+  }
 } 

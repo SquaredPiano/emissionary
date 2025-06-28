@@ -2,13 +2,13 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
-import cv2
+import cv2  # type: ignore
 import numpy as np
 from PIL import Image
 import base64
 import io
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import json
 from datetime import datetime
 import os
@@ -22,6 +22,20 @@ from scipy import ndimage
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Constants
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your-groq-api-key-here")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+MIN_IMAGE_HEIGHT = 1000
+CLAHE_CLIP_LIMIT = 2.0
+CLAHE_TILE_GRID_SIZE = (8, 8)
+BILATERAL_FILTER_D = 9
+BILATERAL_FILTER_SIGMA_COLOR = 75
+BILATERAL_FILTER_SIGMA_SPACE = 75
+CANNY_LOW_THRESHOLD = 50
+CANNY_HIGH_THRESHOLD = 150
+HOUGH_LINES_THRESHOLD = 100
+ROTATION_ANGLE_THRESHOLD = 0.5
 
 app = FastAPI(title="Emissionary OCR Service", version="2.0.0")
 
@@ -49,8 +63,8 @@ try:
         show_log=False       # Reduce logging output
     )
     logger.info("PaddleOCR initialized successfully with receipt-optimized settings")
-except Exception as e:
-    logger.error(f"Failed to initialize PaddleOCR: {e}")
+except (ImportError, RuntimeError) as error:
+    logger.error(f"Failed to initialize PaddleOCR: {error}")
     try:
         # Fallback to minimal settings
         reader = PaddleOCR(
@@ -59,13 +73,9 @@ except Exception as e:
             show_log=False
         )
         logger.info("PaddleOCR initialized with fallback settings")
-    except Exception as e2:
-        logger.error(f"PaddleOCR fallback initialization also failed: {e2}")
+    except (ImportError, RuntimeError) as fallback_error:
+        logger.error(f"PaddleOCR fallback initialization also failed: {fallback_error}")
         reader = None
-
-# Groq API configuration
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your-groq-api-key-here")
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 class OCRRequest(BaseModel):
     image: str  # Base64 encoded image
@@ -121,20 +131,19 @@ def advanced_preprocess_image(image_data: str) -> np.ndarray:
             gray = image_np
         
         # Step 1: Resize if too small (maintain aspect ratio)
-        min_height = 1000
-        if gray.shape[0] < min_height:
-            scale_factor = min_height / gray.shape[0]
+        if gray.shape[0] < MIN_IMAGE_HEIGHT:
+            scale_factor = MIN_IMAGE_HEIGHT / gray.shape[0]
             new_width = int(gray.shape[1] * scale_factor)
             new_height = int(gray.shape[0] * scale_factor)
             gray = cv2.resize(gray, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
         
         # Step 2: Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
         # This helps with uneven lighting and improves text visibility
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        clahe = cv2.createCLAHE(clipLimit=CLAHE_CLIP_LIMIT, tileGridSize=CLAHE_TILE_GRID_SIZE)
         enhanced = clahe.apply(gray)
         
         # Step 3: Denoise using bilateral filter (preserves edges while removing noise)
-        denoised = cv2.bilateralFilter(enhanced, 9, 75, 75)
+        denoised = cv2.bilateralFilter(enhanced, BILATERAL_FILTER_D, BILATERAL_FILTER_SIGMA_COLOR, BILATERAL_FILTER_SIGMA_SPACE)
         
         # Step 4: Apply morphological operations to clean up the image
         # Create a kernel for morphological operations
@@ -145,19 +154,21 @@ def advanced_preprocess_image(image_data: str) -> np.ndarray:
         
         # Step 5: Deskew the image if needed
         # Find the angle of rotation using edge detection
-        edges = cv2.Canny(opened, 50, 150, apertureSize=3)
-        lines = cv2.HoughLines(edges, 1, np.pi/180, threshold=100)
+        edges = cv2.Canny(opened, CANNY_LOW_THRESHOLD, CANNY_HIGH_THRESHOLD, apertureSize=3)
+        lines = cv2.HoughLines(edges, 1, np.pi/180, threshold=HOUGH_LINES_THRESHOLD)
         
         if lines is not None and len(lines) > 0:
             angles = []
-            for rho, theta in lines[:10]:  # Check first 10 lines
-                angle = theta * 180 / np.pi
-                if angle < 45 or angle > 135:
-                    angles.append(angle)
+            for line in lines[:10]:  # Check first 10 lines
+                if len(line) >= 2:
+                    rho, theta = line[0], line[1]
+                    angle = theta * 180 / np.pi
+                    if angle < 45 or angle > 135:
+                        angles.append(angle)
             
             if angles:
                 median_angle = np.median(angles)
-                if abs(median_angle) > 0.5:  # Only rotate if angle is significant
+                if abs(median_angle) > ROTATION_ANGLE_THRESHOLD:  # Only rotate if angle is significant
                     (h, w) = opened.shape[:2]
                     center = (w // 2, h // 2)
                     M = cv2.getRotationMatrix2D(center, median_angle, 1.0)
@@ -167,9 +178,9 @@ def advanced_preprocess_image(image_data: str) -> np.ndarray:
         # This preserves text information better for OCR
         return opened
         
-    except Exception as e:
-        logger.error(f"Error in advanced image preprocessing: {e}")
-        raise ValueError(f"Failed to preprocess image: {str(e)}")
+    except (ValueError, OSError, IOError) as error:
+        logger.error(f"Error in advanced image preprocessing: {error}")
+        raise ValueError(f"Failed to preprocess image: {str(error)}")
 
 def extract_text_with_layout(ocr_results) -> tuple:
     """Extract text from PaddleOCR results with layout information"""
@@ -534,17 +545,17 @@ Example: [{{"name": "organic bananas", "carbon_emissions": 1.4, "category": "fru
                 else:
                     logger.warning("No valid JSON found in LLM response")
                     
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse LLM response: {e}")
+            except json.JSONDecodeError as json_error:
+                logger.error(f"Failed to parse LLM response: {json_error}")
                 logger.debug(f"LLM response: {llm_response}")
                 
         else:
             logger.error(f"Groq API error: {response.status_code} - {response.text}")
             
-    except requests.RequestException as e:
-        logger.error(f"Request error calling Groq LLM: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error calling Groq LLM: {str(e)}")
+    except requests.RequestException as request_error:
+        logger.error(f"Request error calling Groq LLM: {str(request_error)}")
+    except (ValueError, KeyError, TypeError) as processing_error:
+        logger.error(f"Processing error calling Groq LLM: {str(processing_error)}")
     
     return items
 
@@ -705,12 +716,15 @@ async def process_receipt(request: OCRRequest):
             raw_ocr_data=raw_ocr_data
         )
         
-    except ValueError as e:
-        logger.error(f"Validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"OCR processing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
+    except ValueError as validation_error:
+        logger.error(f"Validation error: {validation_error}")
+        raise HTTPException(status_code=400, detail=str(validation_error))
+    except (OSError, IOError) as file_error:
+        logger.error(f"File processing error: {file_error}")
+        raise HTTPException(status_code=400, detail=f"Image processing failed: {str(file_error)}")
+    except (ImportError, RuntimeError) as ocr_error:
+        logger.error(f"OCR processing failed: {ocr_error}")
+        raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(ocr_error)}")
 
 @app.post("/upload")
 async def upload_receipt(file: UploadFile = File(...)):
@@ -731,8 +745,12 @@ async def upload_receipt(file: UploadFile = File(...)):
         # Process the receipt
         return await process_receipt(request)
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+    except (OSError, IOError) as file_error:
+        logger.error(f"File upload error: {file_error}")
+        raise HTTPException(status_code=400, detail=f"File upload failed: {str(file_error)}")
+    except (ValueError, TypeError) as processing_error:
+        logger.error(f"Processing error: {processing_error}")
+        raise HTTPException(status_code=500, detail=f"File processing failed: {str(processing_error)}")
 
 @app.get("/", response_class=HTMLResponse)
 async def upload_page():

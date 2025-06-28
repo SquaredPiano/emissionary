@@ -1,33 +1,31 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useUserSync } from '@/hooks/useUserSync';
 
-interface UserSyncProviderProps {
-  children: ReactNode;
+interface UserSyncContextType {
+  syncing: boolean;
+  synced: boolean;
+  error: string | null;
+  retrySync: () => void;
 }
 
-export function UserSyncProvider({ children }: UserSyncProviderProps) {
-  const { isSyncing, syncError } = useUserSync();
+const UserSyncContext = createContext<UserSyncContextType | undefined>(undefined);
 
-  useEffect(() => {
-    if (syncError) {
-      console.error('User sync error:', syncError);
-      // You could show a toast notification here
-    }
-  }, [syncError]);
+export function UserSyncProvider({ children }: { children: ReactNode }) {
+  const userSync = useUserSync();
 
-  // Optionally show a loading state while syncing
-  if (isSyncing) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Setting up your account...</p>
-        </div>
-      </div>
-    );
+  return (
+    <UserSyncContext.Provider value={userSync}>
+      {children}
+    </UserSyncContext.Provider>
+  );
+}
+
+export function useUserSyncContext() {
+  const context = useContext(UserSyncContext);
+  if (context === undefined) {
+    throw new Error('useUserSyncContext must be used within a UserSyncProvider');
   }
-
-  return <>{children}</>;
+  return context;
 } 

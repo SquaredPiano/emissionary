@@ -5,7 +5,7 @@ Test script for PaddleOCR installation and functionality with real receipt image
 
 import sys
 import os
-import cv2
+import cv2  # type: ignore
 import numpy as np
 from PIL import Image
 import asyncio
@@ -16,45 +16,45 @@ def test_imports():
     
     try:
         import cv2
-        print("✓ OpenCV imported successfully")
-    except ImportError as e:
-        print(f"✗ OpenCV import failed: {e}")
+        print("OpenCV imported successfully")
+    except ImportError as import_error:
+        print(f"OpenCV import failed: {import_error}")
         return False
     
     try:
         import numpy as np
-        print("✓ NumPy imported successfully")
-    except ImportError as e:
-        print(f"✗ NumPy import failed: {e}")
+        print("NumPy imported successfully")
+    except ImportError as import_error:
+        print(f"NumPy import failed: {import_error}")
         return False
     
     try:
         from PIL import Image
-        print("✓ PIL imported successfully")
-    except ImportError as e:
-        print(f"✗ PIL import failed: {e}")
+        print("PIL imported successfully")
+    except ImportError as import_error:
+        print(f"PIL import failed: {import_error}")
         return False
     
     try:
         from paddleocr import PaddleOCR
-        print("✓ PaddleOCR imported successfully")
-    except ImportError as e:
-        print(f"✗ PaddleOCR import failed: {e}")
-        print("  Please install PaddleOCR: pip install paddleocr")
+        print("PaddleOCR imported successfully")
+    except ImportError as import_error:
+        print(f"PaddleOCR import failed: {import_error}")
+        print("Please install PaddleOCR: pip install paddleocr")
         return False
     
     try:
         from skimage import filters
-        print("✓ scikit-image imported successfully")
-    except ImportError as e:
-        print(f"✗ scikit-image import failed: {e}")
+        print("scikit-image imported successfully")
+    except ImportError as import_error:
+        print(f"scikit-image import failed: {import_error}")
         return False
     
     try:
         from scipy import ndimage
-        print("✓ SciPy imported successfully")
-    except ImportError as e:
-        print(f"✗ SciPy import failed: {e}")
+        print("SciPy imported successfully")
+    except ImportError as import_error:
+        print(f"SciPy import failed: {import_error}")
         return False
     
     return True
@@ -73,10 +73,10 @@ def test_paddleocr_initialization():
             use_gpu=False,
             show_log=False  # Reduce logging output
         )
-        print("✓ PaddleOCR initialized successfully")
+        print("PaddleOCR initialized successfully")
         return reader
-    except Exception as e:
-        print(f"✗ PaddleOCR initialization failed: {e}")
+    except (ImportError, RuntimeError) as init_error:
+        print(f"PaddleOCR initialization failed: {init_error}")
         try:
             # Fallback to even more minimal settings
             reader = PaddleOCR(
@@ -84,10 +84,10 @@ def test_paddleocr_initialization():
                 use_gpu=False,
                 show_log=False
             )
-            print("✓ PaddleOCR initialized with fallback settings")
+            print("PaddleOCR initialized with fallback settings")
             return reader
-        except Exception as e2:
-            print(f"✗ PaddleOCR fallback initialization also failed: {e2}")
+        except (ImportError, RuntimeError) as fallback_error:
+            print(f"PaddleOCR fallback initialization also failed: {fallback_error}")
             return None
 
 def test_real_ocr_with_receipt(reader):
@@ -97,16 +97,16 @@ def test_real_ocr_with_receipt(reader):
     try:
         # Check if receipt.png exists
         if not os.path.exists('receipt.png'):
-            print("✗ receipt.png not found in current directory")
+            print("receipt.png not found in current directory")
             return False
         
         # Load the receipt image
         image = cv2.imread('receipt.png')
         if image is None:
-            print("✗ Failed to load receipt.png")
+            print("Failed to load receipt.png")
             return False
         
-        print(f"✓ Loaded receipt.png: {image.shape}")
+        print(f"Loaded receipt.png: {image.shape}")
         
         # Perform OCR
         try:
@@ -116,11 +116,11 @@ def test_real_ocr_with_receipt(reader):
             results = reader.ocr(image)
         
         if results is None or len(results) == 0:
-            print("✗ No OCR results returned")
+            print("No OCR results returned")
             return False
         
         # Extract and display results
-        print("✓ OCR completed successfully!")
+        print("OCR completed successfully!")
         print(f"Found {len(results[0])} text regions")
         
         # Show first 10 results
@@ -133,8 +133,11 @@ def test_real_ocr_with_receipt(reader):
         
         return True
         
-    except Exception as e:
-        print(f"✗ OCR test failed: {e}")
+    except (OSError, IOError) as file_error:
+        print(f"File error in OCR test: {file_error}")
+        return False
+    except (ImportError, RuntimeError) as ocr_error:
+        print(f"OCR processing error: {ocr_error}")
         return False
 
 def test_preprocessing_pipeline():
@@ -155,14 +158,17 @@ def test_preprocessing_pipeline():
         # Test preprocessing
         processed_image = advanced_preprocess_image(image_base64)
         
-        print(f"✓ Preprocessing successful: {processed_image.shape}")
+        print(f"Preprocessing successful: {processed_image.shape}")
         print(f"  Image type: {processed_image.dtype}")
         print(f"  Value range: {processed_image.min()} - {processed_image.max()}")
         
         return True
         
-    except Exception as e:
-        print(f"✗ Preprocessing test failed: {e}")
+    except (OSError, IOError) as file_error:
+        print(f"File error in preprocessing test: {file_error}")
+        return False
+    except (ValueError, TypeError) as processing_error:
+        print(f"Processing error in preprocessing test: {processing_error}")
         return False
 
 async def test_full_pipeline():
@@ -189,7 +195,7 @@ async def test_full_pipeline():
         # Process the receipt - now properly awaited
         result = await process_receipt(request)
         
-        print("✓ Full pipeline completed successfully!")
+        print("Full pipeline completed successfully!")
         print(f"  Confidence: {result.confidence:.3f}")
         print(f"  Processing time: {result.processing_time:.2f}s")
         print(f"  Items found: {len(result.items) if result.items else 0}")
@@ -204,8 +210,13 @@ async def test_full_pipeline():
         
         return True
         
-    except Exception as e:
-        print(f"✗ Full pipeline test failed: {e}")
+    except (OSError, IOError) as file_error:
+        print(f"File error in full pipeline test: {file_error}")
+        import traceback
+        traceback.print_exc()
+        return False
+    except (ValueError, TypeError) as processing_error:
+        print(f"Processing error in full pipeline test: {processing_error}")
         import traceback
         traceback.print_exc()
         return False

@@ -10,10 +10,6 @@ import { processReceipt } from '@/lib/actions/receipts';
 import { useToast } from '@/components/ui/use-toast';
 import type { OurFileRouter } from "@/lib/uploadthing";
 
-interface FileUploaderProps {
-  onFileUpload?: (file: File) => void;
-}
-
 interface UploadedFile {
   url: string;
   name: string;
@@ -22,7 +18,7 @@ interface UploadedFile {
   key: string;
 }
 
-export function FileUploader({ onFileUpload }: FileUploaderProps) {
+export function SimpleUpload() {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,7 +26,7 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleUploadComplete = useCallback((res: UploadedFile[]) => {
+  const handleUploadComplete = useCallback((res: any) => {
     if (res && res.length > 0) {
       const file = res[0];
       setUploadedFile(file);

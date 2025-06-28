@@ -50,7 +50,6 @@ export function useUserInfo() {
         throw new Error(data.error || 'Failed to fetch user data');
       }
     } catch (err) {
-      console.error('Error fetching user:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
@@ -82,7 +81,6 @@ export function useUserInfo() {
         throw new Error(data.error || 'Failed to update profile');
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       throw err;
     }

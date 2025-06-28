@@ -2,57 +2,49 @@
 
 import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+import { syncUserData } from '@/lib/actions/users';
 
 export function useUserSync() {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const router = useRouter();
+  const { user: clerkUser, isLoaded, isSignedIn } = useUser();
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn && user) {
-      syncUserToDatabase();
+    if (isLoaded && isSignedIn && clerkUser && !synced) {
+      syncUser();
     }
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn, clerkUser, synced]);
 
-  const syncUserToDatabase = async () => {
-    if (!user) return;
-
-    setIsSyncing(true);
-    setSyncError(null);
-
+  const syncUser = async () => {
     try {
-      const response = await fetch('/api/users/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          clerkId: user.id,
-          email: user.primaryEmailAddress?.emailAddress,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        }),
-      });
+      setSyncing(true);
+      setError(null);
 
-      if (!response.ok) {
-        throw new Error('Failed to sync user to database');
+      const result = await syncUserData();
+      
+      if (result.success) {
+        setSynced(true);
+      } else {
+        setError(result.error || 'Failed to sync user data');
       }
-
-      const result = await response.json();
-      console.log('User synced successfully:', result);
-    } catch (error) {
-      console.error('Error syncing user:', error);
-      setSyncError(error instanceof Error ? error.message : 'Unknown error');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setIsSyncing(false);
+      setSyncing(false);
     }
   };
 
+  const retrySync = () => {
+    setSynced(false);
+    setError(null);
+    syncUser();
+  };
+
   return {
-    isSyncing,
-    syncError,
-    syncUserToDatabase,
+    syncing,
+    synced,
+    error,
+    retrySync,
   };
 } 
