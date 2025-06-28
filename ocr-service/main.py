@@ -263,7 +263,7 @@ def cli_main():
     print(json.dumps({
         "success": True,
         "text": text,
-        "items": [item.dict() for item in enhanced_items],
+        "items": [item.model_dump() for item in enhanced_items],
         "merchant": parsed.get('merchant'),
         "total": parsed.get('total'),
         "date": parsed.get('date'),
@@ -278,7 +278,7 @@ def call_groq_llm(items: List[ReceiptItem], receipt_text: str) -> Optional[List[
     if not GROQ_API_KEY:
         return None
     try:
-        items_data = [item.dict() for item in items]
+        items_data = [item.model_dump() for item in items]
         prompt = f"""
 You are an expert in calculating carbon footprints for food items. Analyze the following receipt items and provide accurate carbon emissions data.
 
@@ -301,6 +301,8 @@ Return a JSON array with enhanced items. Each item should have:
 - carbon_emissions: carbon footprint in kg CO2e
 - category: food category
 - confidence: confidence level (0.0-1.0)
+
+IMPORTANT: Return ONLY valid JSON array, no additional text or formatting.
 """
         headers = {
             "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -309,7 +311,7 @@ Return a JSON array with enhanced items. Each item should have:
         data = {
             "model": "llama3-70b-8192",
             "messages": [
-                {"role": "system", "content": "You are an expert in food carbon footprint calculation. Provide accurate, scientific data in JSON format."},
+                {"role": "system", "content": "You are an expert in food carbon footprint calculation. Provide accurate, scientific data in JSON format only."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.1,
@@ -318,12 +320,12 @@ Return a JSON array with enhanced items. Each item should have:
         response = requests.post(GROQ_API_URL, headers=headers, json=data, timeout=30)
         if response.status_code == 200:
             result = response.json()
-            content = result['choices'][0]['message']['content']
+            content = result['choices'][0]['message']['content'].strip()
             import json as pyjson
             try:
-                json_match = re.search(r'\[.*\]', content, re.DOTALL)
-                if json_match:
-                    enhanced_data = pyjson.loads(json_match.group(0))
+                # Try to parse the entire content as JSON first
+                enhanced_data = pyjson.loads(content)
+                if isinstance(enhanced_data, list):
                     enhanced_items = []
                     for i, enhanced_item in enumerate(enhanced_data):
                         enhanced_items.append(EnhancedReceiptItem(
@@ -336,6 +338,30 @@ Return a JSON array with enhanced items. Each item should have:
                             confidence=enhanced_item.get('confidence', 0.8)
                         ))
                     return enhanced_items
+                else:
+                    logger.error("Groq LLM response is not a list")
+            except pyjson.JSONDecodeError:
+                # Fallback: try to extract JSON array from content
+                json_match = re.search(r'\[.*\]', content, re.DOTALL)
+                if json_match:
+                    try:
+                        enhanced_data = pyjson.loads(json_match.group(0))
+                        enhanced_items = []
+                        for i, enhanced_item in enumerate(enhanced_data):
+                            enhanced_items.append(EnhancedReceiptItem(
+                                name=enhanced_item.get('name', items[i].name if i < len(items) else 'Unknown'),
+                                quantity=enhanced_item.get('quantity', 1.0),
+                                unit_price=items[i].unit_price if i < len(items) else None,
+                                total_price=items[i].total_price if i < len(items) else None,
+                                carbon_emissions=enhanced_item.get('carbon_emissions', 0.0),
+                                category=enhanced_item.get('category', 'processed'),
+                                confidence=enhanced_item.get('confidence', 0.8)
+                            ))
+                        return enhanced_items
+                    except pyjson.JSONDecodeError as e:
+                        logger.error(f"Failed to parse extracted JSON: {e}")
+                else:
+                    logger.error("No JSON array found in Groq response")
             except Exception as e:
                 logger.error(f"Failed to parse Groq LLM response: {e}")
         logger.warning("Groq LLM enhancement failed, using fallback calculation")
