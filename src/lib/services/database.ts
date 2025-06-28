@@ -98,6 +98,8 @@ export class DatabaseService {
                 quantity: validatedItem.quantity,
                 unitPrice: validatedItem.unitPrice,
                 totalPrice: validatedItem.totalPrice,
+                carbonEmissions: validatedItem.carbonEmissions,
+                confidence: validatedItem.confidence,
               },
             });
           })
@@ -113,6 +115,7 @@ export class DatabaseService {
               receiptId: receipt.id,
               userId,
               totalCO2: validatedEmissions.totalCO2,
+              llmEnhanced: validatedEmissions.llmEnhanced,
             },
           });
         }
@@ -256,7 +259,7 @@ export class DatabaseService {
         }
       }
 
-      const emissions = await prisma.emissionsLog.findMany({
+      return await prisma.emissionsLog.findMany({
         where: whereClause,
         include: {
           receipt: {
@@ -267,8 +270,6 @@ export class DatabaseService {
         },
         orderBy: { createdAt: "desc" },
       });
-
-      return emissions;
     } catch (error) {
       logger.error("Error fetching emissions", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch emissions");
@@ -277,31 +278,24 @@ export class DatabaseService {
 
   static async getEmissionsSummary(userId: string) {
     try {
-      const emissions = await this.getEmissionsByUser(userId);
-      
-      const totalEmissions = emissions.reduce((sum, emission) => sum + Number(emission.totalCO2), 0);
-      const averageEmissions = emissions.length > 0 ? totalEmissions / emissions.length : 0;
-      
-      // Calculate weekly and monthly averages
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
-      const weeklyEmissions = emissions
-        .filter(e => e.createdAt >= weekAgo)
-        .reduce((sum, emission) => sum + Number(emission.totalCO2), 0);
-      
-      const monthlyEmissions = emissions
-        .filter(e => e.createdAt >= monthAgo)
-        .reduce((sum, emission) => sum + Number(emission.totalCO2), 0);
+      const [totalEmissions, totalReceipts, averageEmissions] = await Promise.all([
+        prisma.emissionsLog.aggregate({
+          where: { userId },
+          _sum: { totalCO2: true },
+        }),
+        prisma.emissionsLog.count({
+          where: { userId },
+        }),
+        prisma.emissionsLog.aggregate({
+          where: { userId },
+          _avg: { totalCO2: true },
+        }),
+      ]);
 
       return {
-        totalEmissions,
-        averageEmissions,
-        weeklyEmissions,
-        monthlyEmissions,
-        totalReceipts: emissions.length,
-        emissions,
+        totalEmissions: totalEmissions._sum.totalCO2 || 0,
+        totalReceipts,
+        averageEmissions: averageEmissions._avg.totalCO2 || 0,
       };
     } catch (error) {
       logger.error("Error fetching emissions summary", error instanceof Error ? error : new Error(String(error)), { userId });
@@ -311,28 +305,54 @@ export class DatabaseService {
 
   static async getAnalytics(userId: string) {
     try {
-      const receipts = await prisma.receipt.findMany({
-        where: { userId },
-        include: {
-          receiptItems: true,
-          emissionsLog: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      const totalReceipts = receipts.length;
-      const totalEmissions = receipts.reduce((sum, receipt) => {
-        return sum + (receipt.emissionsLog ? Number(receipt.emissionsLog.totalCO2) : 0);
-      }, 0);
-      
-      const averageReceiptValue = receipts.length > 0 
-        ? receipts.reduce((sum, receipt) => sum + Number(receipt.total), 0) / receipts.length 
-        : 0;
+      const [monthlyEmissions, categoryBreakdown, recentReceipts] = await Promise.all([
+        // Monthly emissions for the last 12 months
+        prisma.$queryRaw`
+          SELECT 
+            DATE_TRUNC('month', "createdAt") as month,
+            SUM("totalCO2") as total_emissions,
+            COUNT(*) as receipt_count
+          FROM emissions_logs 
+          WHERE "userId" = ${userId}
+          AND "createdAt" >= NOW() - INTERVAL '12 months'
+          GROUP BY DATE_TRUNC('month', "createdAt")
+          ORDER BY month DESC
+        `,
+        
+        // Category breakdown
+        prisma.receiptItem.groupBy({
+          by: ['category'],
+          where: {
+            receipt: { userId },
+          },
+          _sum: {
+            carbonEmissions: true,
+          },
+          _count: true,
+        }),
+        
+        // Recent receipts with emissions
+        prisma.receipt.findMany({
+          where: { userId },
+          include: {
+            emissionsLog: true,
+            receiptItems: {
+              select: {
+                name: true,
+                carbonEmissions: true,
+                category: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        }),
+      ]);
 
       return {
-        totalReceipts,
-        totalEmissions,
-        averageReceiptValue,
+        monthlyEmissions,
+        categoryBreakdown,
+        recentReceipts,
       };
     } catch (error) {
       logger.error("Error fetching analytics", error instanceof Error ? error : new Error(String(error)), { userId });

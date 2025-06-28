@@ -4,109 +4,73 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { DatabaseService } from "@/lib/services/database";
 import { logger } from "@/lib/logger";
+import { UserSyncSchema, type UserSync } from "@/lib/schemas";
 import { z } from "zod";
 
 // Input schemas for server actions
-const UpdateUserSchema = z.object({
-  firstName: z.string().min(1).max(50).optional(),
-  lastName: z.string().min(1).max(50).optional(),
+const SyncUserSchema = z.object({
+  clerkId: z.string(),
+  email: z.string().email(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   avatar: z.string().url().optional(),
-  bio: z.string().max(500).optional(),
-  location: z.string().max(100).optional(),
+});
+
+const UpdateUserSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  avatar: z.string().url().optional(),
+  bio: z.string().optional(),
+  location: z.string().optional(),
 });
 
 /**
- * Get current user profile
+ * Sync Clerk user with database
  */
-export async function getCurrentUser() {
+export async function syncUser(input: z.infer<typeof SyncUserSchema>) {
   try {
-    // Authenticate user
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
+    // Validate input
+    const validatedInput = SyncUserSchema.parse(input);
 
-    // Get user from Clerk
-    const clerkUser = await currentUser();
-    if (!clerkUser) {
-      throw new Error("User not found");
-    }
-
-    // Get user from database
-    const dbUser = await DatabaseService.getUserByClerkId(userId);
+    // Check if user already exists
+    const existingUser = await DatabaseService.getUserByClerkId(validatedInput.clerkId);
     
-    // If user doesn't exist in database, create them
-    if (!dbUser) {
-      const newUser = await DatabaseService.createUser(
-        userId,
-        clerkUser.emailAddresses[0]?.emailAddress || "",
-        clerkUser.firstName || undefined,
-        clerkUser.lastName || undefined
-      );
+    if (existingUser) {
+      // Update existing user
+      const updatedUser = await DatabaseService.updateUser(validatedInput.clerkId, {
+        firstName: validatedInput.firstName,
+        lastName: validatedInput.lastName,
+        avatar: validatedInput.avatar,
+      });
+
+      logger.info("User updated successfully", { clerkId: validatedInput.clerkId });
       
       return {
         success: true,
-        data: {
-          ...newUser,
-          clerkUser,
-        },
+        data: updatedUser,
+        action: "updated",
       };
-    }
+    } else {
+      // Create new user
+      const newUser = await DatabaseService.createUser(
+        validatedInput.clerkId,
+        validatedInput.email,
+        validatedInput.firstName,
+        validatedInput.lastName
+      );
 
-    return {
-      success: true,
-      data: {
-        ...dbUser,
-        clerkUser,
-      },
-    };
-  } catch (error) {
-    const { userId } = await auth();
-    logger.error("Get current user error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
-    
-    if (error instanceof Error) {
+      logger.info("User created successfully", { clerkId: validatedInput.clerkId });
+      
       return {
-        success: false,
-        error: error.message,
+        success: true,
+        data: newUser,
+        action: "created",
       };
     }
-    
-    return {
-      success: false,
-      error: "Failed to fetch user profile",
-    };
-  }
-}
-
-/**
- * Update user profile
- */
-export async function updateUserProfile(input: z.infer<typeof UpdateUserSchema>) {
-  try {
-    // Authenticate user
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Validate input
-    const validatedInput = UpdateUserSchema.parse(input);
-
-    // Update user in database
-    const updatedUser = await DatabaseService.updateUser(userId, validatedInput);
-
-    // Revalidate relevant pages
-    revalidatePath("/dashboard");
-    revalidatePath("/settings");
-
-    return {
-      success: true,
-      data: updatedUser,
-      message: "Profile updated successfully",
-    };
   } catch (error) {
-    const { userId } = await auth();
-    logger.error("Update user profile error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
+    logger.error("User sync error", error instanceof Error ? error : new Error(String(error)), { 
+      clerkId: input.clerkId 
+    });
     
     if (error instanceof z.ZodError) {
       return {
@@ -124,7 +88,162 @@ export async function updateUserProfile(input: z.infer<typeof UpdateUserSchema>)
     
     return {
       success: false,
-      error: "Failed to update profile",
+      error: "Failed to sync user",
+    };
+  }
+}
+
+/**
+ * Get current user from database
+ */
+export async function getCurrentUser() {
+  try {
+    // Get user from Clerk
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        error: "Unauthorized",
+      };
+    }
+
+    // Get user from database
+    const user = await DatabaseService.getUserByClerkId(userId);
+    if (!user) {
+      return {
+        success: false,
+        error: "User not found in database",
+      };
+    }
+
+    return {
+      success: true,
+      data: user,
+    };
+  } catch (error) {
+    logger.error("Get current user error", error instanceof Error ? error : new Error(String(error)));
+    
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+    
+    return {
+      success: false,
+      error: "Failed to get current user",
+    };
+  }
+}
+
+/**
+ * Update current user profile
+ */
+export async function updateUserProfile(input: z.infer<typeof UpdateUserSchema>) {
+  try {
+    // Authenticate user
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        error: "Unauthorized",
+      };
+    }
+
+    // Validate input
+    const validatedInput = UpdateUserSchema.parse(input);
+
+    // Update user
+    const updatedUser = await DatabaseService.updateUser(userId, validatedInput);
+
+    // Revalidate relevant pages
+    revalidatePath("/dashboard");
+    revalidatePath("/settings");
+
+    logger.info("User profile updated successfully", { userId });
+
+    return {
+      success: true,
+      data: updatedUser,
+    };
+  } catch (error) {
+    logger.error("Update user profile error", error instanceof Error ? error : new Error(String(error)));
+    
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: `Validation error: ${error.errors.map(e => e.message).join(", ")}`,
+      };
+    }
+    
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+    
+    return {
+      success: false,
+      error: "Failed to update user profile",
+    };
+  }
+}
+
+/**
+ * Ensure user exists in database (auto-sync)
+ */
+export async function ensureUserExists() {
+  try {
+    // Get current user from Clerk
+    const user = await currentUser();
+    if (!user) {
+      return {
+        success: false,
+        error: "No authenticated user",
+      };
+    }
+
+    // Check if user exists in database
+    const existingUser = await DatabaseService.getUserByClerkId(user.id);
+    
+    if (!existingUser) {
+      // Auto-create user
+      const newUser = await DatabaseService.createUser(
+        user.id,
+        user.emailAddresses[0]?.emailAddress || "",
+        user.firstName || undefined,
+        user.lastName || undefined
+      );
+
+      logger.info("User auto-created", { clerkId: user.id });
+      
+      return {
+        success: true,
+        data: newUser,
+        action: "created",
+      };
+    }
+
+    return {
+      success: true,
+      data: existingUser,
+      action: "exists",
+    };
+  } catch (error) {
+    logger.error("Ensure user exists error", error instanceof Error ? error : new Error(String(error)));
+    
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+    
+    return {
+      success: false,
+      error: "Failed to ensure user exists",
     };
   }
 }

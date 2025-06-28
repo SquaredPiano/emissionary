@@ -29,20 +29,9 @@ export function DashboardPageHeader({ pageTitle, showBackButton = false }: Dashb
       
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-6">
-          {shouldShowBack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="flex items-center gap-2 text-muted-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          )}
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{pageTitle}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold tracking-tight text-black dark:text-white">{pageTitle}</h1>
+            <p className="text-black dark:text-muted-foreground">
               {pathname === '/dashboard' && 'Track your carbon footprint and emissions'}
               {pathname.includes('/upload') && 'Upload and process your grocery receipts'}
               {pathname.includes('/history') && 'View your receipt history and emissions data'}

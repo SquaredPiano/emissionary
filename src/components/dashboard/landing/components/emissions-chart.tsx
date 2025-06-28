@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTheme } from 'next-themes';
 
 // TODO: Replace with actual data from backend API calls
 const mockEmissionsData = [
@@ -16,9 +17,16 @@ const mockEmissionsData = [
 
 interface EmissionsChartProps {
   data?: typeof mockEmissionsData;
+  lineType?: 'monotone' | 'linear';
 }
 
-export function EmissionsChart({ data = mockEmissionsData }: EmissionsChartProps) {
+export function EmissionsChart({ data = mockEmissionsData, lineType = 'monotone' }: EmissionsChartProps) {
+  const { theme } = useTheme ? useTheme() : { theme: 'light' };
+
+  // Use CSS vars for color, fallback to black/white for dot fill
+  const lineColor = theme === 'dark' ? '#10b981' : '#222';
+  const dotColor = theme === 'dark' ? '#fff' : '#222';
+
   if (data.length === 0) {
     return (
       <Card className="bg-background/50 backdrop-blur-[24px] border-border">
@@ -28,8 +36,8 @@ export function EmissionsChart({ data = mockEmissionsData }: EmissionsChartProps
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="text-center">
-            <div className="text-muted-foreground mb-2">📊</div>
-            <p className="text-muted-foreground">Upload a receipt to see your emissions trends</p>
+            <div className="text-black dark:text-muted-foreground mb-2">📊</div>
+            <p className="text-black dark:text-muted-foreground">Upload a receipt to see your emissions trends</p>
           </div>
         </CardContent>
       </Card>
@@ -65,13 +73,18 @@ export function EmissionsChart({ data = mockEmissionsData }: EmissionsChartProps
               labelStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(value: number) => [`${value} kg CO₂e`, 'Emissions']}
             />
+            {/*
+              Use 'monotone' for smooth (squiggly) lines, 'linear' for jagged. Default is 'monotone'.
+              Dots and lines adapt to theme for visibility.
+            */}
             <Line 
-              type="monotone" 
+              type={lineType} 
               dataKey="emissions" 
-              stroke="hsl(var(--primary))" 
+              stroke={lineColor}
               strokeWidth={3}
-              dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+              dot={{ fill: dotColor, stroke: lineColor, strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: lineColor, strokeWidth: 2, fill: dotColor }}
+              connectNulls={true}
             />
           </LineChart>
         </ResponsiveContainer>

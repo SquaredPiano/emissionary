@@ -39,11 +39,11 @@ model Receipt {
   userId      String
   imageUrl    String?
   merchant    String
-  total       Decimal
+  total       Decimal  @db.Decimal(10, 2)
   date        DateTime
   currency    String   @default("USD")
-  taxAmount   Decimal? @default(0)
-  tipAmount   Decimal? @default(0)
+  taxAmount   Decimal? @db.Decimal(10, 2) @default(0)
+  tipAmount   Decimal? @db.Decimal(10, 2) @default(0)
   paymentMethod String?
   receiptNumber String?
   createdAt   DateTime @default(now())
@@ -61,13 +61,15 @@ model ReceiptItem {
   id          String   @id @default(cuid())
   receiptId   String
   name        String
-  quantity    Decimal
-  unitPrice   Decimal
-  totalPrice  Decimal
+  quantity    Decimal  @db.Decimal(10, 3)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
   category    String?
   brand       String?
   barcode     String?
   description String?
+  carbonEmissions Decimal? @db.Decimal(10, 4) // kg CO2e
+  confidence  Decimal? @db.Decimal(3, 2) // OCR confidence 0-1
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -81,10 +83,11 @@ model EmissionsLog {
   id         String   @id @default(cuid())
   receiptId  String   @unique
   userId     String
-  totalCO2   Decimal
+  totalCO2   Decimal  @db.Decimal(10, 4) // kg CO2e
   breakdown  Json     // Store emission breakdown by category
   calculationMethod String? // Method used for calculation
-  carbonIntensity   Decimal? // Carbon intensity factor used
+  carbonIntensity   Decimal? @db.Decimal(10, 4) // Carbon intensity factor used
+  llmEnhanced Boolean @default(false) // Whether LLM was used for enhancement
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

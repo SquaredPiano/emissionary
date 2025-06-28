@@ -132,7 +132,7 @@ export function ComparisonChart({
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-sm font-medium text-black dark:text-muted-foreground">
                 Your emissions {getTimePeriodLabel()}
               </p>
               <p className="text-2xl font-bold text-green-600">
@@ -146,7 +146,7 @@ export function ComparisonChart({
                   {getTrendText()}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-black dark:text-muted-foreground">
                 vs {canadianAverage.toFixed(1)} kg CO2e average
               </p>
             </div>
