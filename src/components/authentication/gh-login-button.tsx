@@ -2,7 +2,7 @@
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { signInWithGithub } from '@/app/login/actions';
+import { signInWithGithub } from '@/app/sign-in/[[...sign-in]]/actions';
 import Image from 'next/image';
 
 interface Props {

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { login, loginAnonymously } from '@/app/login/actions';
+import { login, loginAnonymously } from '@/app/sign-in/[[...sign-in]]/actions';
 import { useState } from 'react';
 import { AuthenticationForm } from '@/components/authentication/authentication-form';
 import { Separator } from '@/components/ui/separator';
