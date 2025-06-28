@@ -25,7 +25,7 @@ export async function signInWithGithub() {
   const { data } = await supabase.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: `https://emissionary.vercel.app/auth/callback`,
+      redirectTo: `https://paddle-billing.vercel.app/auth/callback`,
     },
   });
   if (data.url) {
@@ -37,7 +37,7 @@ export async function loginAnonymously() {
   const supabase = await createClient();
   const { error: signInError } = await supabase.auth.signInAnonymously();
   const { error: updateUserError } = await supabase.auth.updateUser({
-    email: `emissionary+${Date.now().toString(36)}@example.com`,
+    email: `aeroedit+${Date.now().toString(36)}@paddle.com`,
   });
 
   if (signInError || updateUserError) {

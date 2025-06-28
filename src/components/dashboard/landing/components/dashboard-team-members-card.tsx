@@ -2,30 +2,31 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 const teamMembers = [
   {
     name: 'Daniel Cromitch',
-    email: 'dc@emissionary.com',
+    email: 'dc@paddle.com',
     initials: 'DC',
     role: 'Owner',
   },
   {
     name: 'Melissa Lee',
-    email: 'ml@emissionary.com',
+    email: 'ml@paddle.com',
     initials: 'ML',
     role: 'Member',
   },
   {
     name: 'Jackson Khan',
-    email: 'jk@emissionary.com',
+    email: 'JK@paddle.com',
     initials: 'JK',
     role: 'Member',
   },
   {
     name: 'Isa Lopez',
-    email: 'il@emissionary.com',
+    email: 'il@paddle.com',
     initials: 'IL',
     role: 'Guest',
   },
@@ -40,8 +41,10 @@ export function DashboardTeamMembersCard() {
             <span className={'text-xl font-medium'}>Team members</span>
             <span className={'text-base leading-4 text-secondary'}>Invite your team members to collaborate</span>
           </div>
-          <Button size={'sm'} variant={'outline'} className={'text-sm rounded-sm border-border'}>
-            <Plus size={16} className={'text-muted-foreground'} />
+          <Button asChild={true} size={'sm'} variant={'outline'} className={'text-sm rounded-sm border-border'}>
+            <Link href={'/dashboard/subscriptions'}>
+              <Plus size={16} className={'text-muted-foreground'} />
+            </Link>
           </Button>
         </CardTitle>
       </CardHeader>

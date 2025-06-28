@@ -27,8 +27,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://emissionary.vercel.app'),
-  title: 'Emissionary',
+  title: 'Emissionary - Track Your Carbon Footprint',
   description:
     'Emissionary is an app to detect your carbon emissions from your receipts. It uses data from your receipt to find your carbon emissions and compares your grocery carbon emissions with the average household.',
 };
@@ -39,6 +38,14 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
+    <ClerkProvider>
+      <html lang="en" className={'min-h-full dark'}>
+        <body className={inter.className}>
+          {children}
+          <Toaster />
+        </body>
+      </html>
+    </ClerkProvider>
     <ClerkProvider>
       <html lang="en" className={'min-h-full dark'}>
         <body className={inter.className}>

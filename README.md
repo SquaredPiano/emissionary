@@ -18,18 +18,20 @@ Emissionary is a powerful team design collaboration app and image editor. With p
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd emissionary
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory with the following variables:
+   Create a `.env.local` file in the root directory with the following variables:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -38,6 +40,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 4. Run the development server:
+
 ```bash
 pnpm dev
 ```

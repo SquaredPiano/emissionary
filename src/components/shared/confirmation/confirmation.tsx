@@ -8,19 +8,9 @@ interface Props {
   description: ReactNode;
   onClose: (open: boolean) => void;
   onConfirm: () => void;
-  confirmText?: string;
-  cancelText?: string;
 }
 
-export function Confirmation({ 
-  isOpen, 
-  onClose, 
-  title, 
-  description, 
-  onConfirm, 
-  confirmText = "Confirm",
-  cancelText = "Cancel"
-}: Props) {
+export function Confirmation({ isOpen, onClose, title, description, onConfirm }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -31,10 +21,10 @@ export function Confirmation({
           <DialogDescription>{description}</DialogDescription>
           <div className={'flex gap-4 items-center justify-end w-full'}>
             <Button onClick={() => onClose(false)} variant={'outline'}>
-              {cancelText}
+              Close
             </Button>
             <Button onClick={() => onConfirm()} variant={'destructive'}>
-              {confirmText}
+              Cancel subscription
             </Button>
           </div>
         </div>

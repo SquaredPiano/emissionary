@@ -1,18 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useUserInfo } from '@/hooks/useUserInfo';
-import '../../styles/home-page.css';
-import { LocalizationBanner } from '@/components/home/header/localization-banner';
-import Header from '@/components/home/header/header';
-import { HeroSection } from '@/components/home/hero-section/hero-section';
-import { HomePageBackground } from '@/components/gradients/home-page-background';
-import { Footer } from '@/components/home/footer/footer';
+import './../../styles/home-page.css';
+import { LocalizationBanner } from './header/localization-banner';
+import Header from './header/header';
+import { HeroSection } from './hero-section/hero-section';
+import { Pricing } from './pricing/pricing';
+import { HomePageBackground } from '../gradients/home-page-background';
+import { Footer } from './footer/footer';
 
-export function HomePage() {
-  const supabase = createClient();
-  const { user } = useUserInfo(supabase);
+interface HomePageProps {
+  user?: { id: string } | null;
+}
+
+export function HomePage({ user }: HomePageProps) {
   const [country, setCountry] = useState('US');
 
   return (
@@ -22,6 +23,7 @@ export function HomePage() {
         <HomePageBackground />
         <Header user={user} />
         <HeroSection />
+        <Pricing country={country} />
         <Footer />
       </div>
     </>
