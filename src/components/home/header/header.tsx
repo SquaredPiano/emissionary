@@ -1,10 +1,22 @@
 import Link from 'next/link';
-import { User } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
+interface DatabaseUser {
+  id: string;
+  clerkId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatar: string | null;
+  bio: string | null;
+  location: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Props {
-  user: User | null;
+  user: DatabaseUser | null;
 }
 
 export default function Header({ user }: Props) {
