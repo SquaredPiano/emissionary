@@ -9,7 +9,17 @@ export default function SignInPage() {
   return (
     <div>
       <LoginGradient />
-      <SignIn/>
+      <div className="flex items-center justify-center min-h-screen">
+        <SignIn 
+          appearance={{
+            elements: {
+              rootBox: "mx-auto",
+              card: "bg-background/80 backdrop-blur-[6px] border border-border/50 shadow-xl",
+            }
+          }}
+          redirectUrl="/dashboard"
+        />
+      </div>
       {/* <div className={'flex flex-col'}>
         <div
           className={
@@ -26,7 +36,7 @@ export default function SignInPage() {
           }
         >
           <div className={'text-center text-muted-foreground text-sm mt-4 font-medium'}>
-            Don’t have an account?{' '}
+            Don't have an account?{' '}
             <a href={'/signup'} className={'text-white'}>
               Sign up
             </a>

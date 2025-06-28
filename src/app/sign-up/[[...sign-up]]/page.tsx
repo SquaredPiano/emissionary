@@ -9,7 +9,17 @@ export default function SignUpPage() {
   return (
     <div>
       <LoginGradient />
-      <SignUp/>
+      <div className="flex items-center justify-center min-h-screen">
+        <SignUp 
+          appearance={{
+            elements: {
+              rootBox: "mx-auto",
+              card: "bg-background/80 backdrop-blur-[6px] border border-border/50 shadow-xl",
+            }
+          }}
+          redirectUrl="/dashboard"
+        />
+      </div>
       {/* <div className={'flex flex-col'}>
         <div
           className={
