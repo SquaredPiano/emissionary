@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/authentication/login-form';
 import { GhLoginButton } from '@/components/authentication/gh-login-button';
 import { SignIn } from '@clerk/nextjs';
 
-export default function LoginPage() {
+export default function SignInPage() {
   return (
     <div>
       <LoginGradient />
