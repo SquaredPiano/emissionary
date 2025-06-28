@@ -13,6 +13,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { ThemeProvider } from '@/components/providers/theme-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,9 +41,16 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className='dark flex items-center justify-center'>
+      <html lang="en" className='dark flex items-center justify-center' suppressHydrationWarning>
         <body className={inter.className}>
-          {children}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            storageKey='emissionary-theme'
+          >
+            {children}
+          </ThemeProvider>
           <Toaster />
         </body>
       </html>

@@ -1,30 +1,152 @@
--- Create customers table to map Paddle customer_id to email
-create table
-  public.customers (
-    customer_id text not null,
-    email text not null,
-    created_at timestamp with time zone not null default now(),
-    updated_at timestamp with time zone not null default now(),
-    constraint customers_pkey primary key (customer_id)
-  ) tablespace pg_default;
+-- -- Create customers table to map Paddle customer_id to email
+-- create table
+--   public.customers (
+--     customer_id text not null,
+--     email text not null,
+--     created_at timestamp with time zone not null default now(),
+--     updated_at timestamp with time zone not null default now(),
+--     constraint customers_pkey primary key (customer_id)
+--   ) tablespace pg_default;
 
--- Create subscription table to store webhook events sent by Paddle
-create table
-  public.subscriptions (
-    subscription_id text not null,
-    subscription_status text not null,
-    price_id text null,
-    product_id text null,
-    scheduled_change text null,
-    customer_id text not null,
-    created_at timestamp with time zone not null default now(),
-    updated_at timestamp with time zone not null default now(),
-    constraint subscriptions_pkey primary key (subscription_id),
-    constraint public_subscriptions_customer_id_fkey foreign key (customer_id) references customers (customer_id)
-  ) tablespace pg_default;
+-- -- Create subscription table to store webhook events sent by Paddle
+-- create table
+--   public.subscriptions (
+--     subscription_id text not null,
+--     subscription_status text not null,
+--     price_id text null,
+--     product_id text null,
+--     scheduled_change text null,
+--     customer_id text not null,
+--     created_at timestamp with time zone not null default now(),
+--     updated_at timestamp with time zone not null default now(),
+--     constraint subscriptions_pkey primary key (subscription_id),
+--     constraint public_subscriptions_customer_id_fkey foreign key (customer_id) references customers (customer_id)
+--   ) tablespace pg_default;
 
--- Grant access to authenticated users to read the customers table to get the customer_id based on the email
-create policy "Enable read access for authenticated users to customers" on "public"."customers" as PERMISSIVE for SELECT to authenticated using ( true );
+-- -- Create users table for Emissionary
+-- create table
+--   public.users (
+--     id text not null,
+--     clerk_id text not null,
+--     email text not null,
+--     first_name text null,
+--     last_name text null,
+--     avatar text null,
+--     bio text null,
+--     location text null,
+--     created_at timestamp with time zone not null default now(),
+--     updated_at timestamp with time zone not null default now(),
+--     constraint users_pkey primary key (id),
+--     constraint users_clerk_id_key unique (clerk_id),
+--     constraint users_email_key unique (email)
+--   ) tablespace pg_default;
 
--- Grant access to authenticated users to read the subscriptions table
-create policy "Enable read access for authenticated users to subscriptions" on "public"."subscriptions" as PERMISSIVE for SELECT to authenticated using ( true );
+-- -- Create receipts table for receipt metadata
+-- create table
+--   public.receipts (
+--     id text not null,
+--     user_id text not null,
+--     image_url text null,
+--     merchant text not null,
+--     total decimal not null,
+--     date timestamp with time zone not null,
+--     currency text not null default 'USD',
+--     tax_amount decimal null default 0,
+--     tip_amount decimal null default 0,
+--     payment_method text null,
+--     receipt_number text null,
+--     created_at timestamp with time zone not null default now(),
+--     updated_at timestamp with time zone not null default now(),
+--     constraint receipts_pkey primary key (id),
+--     constraint receipts_user_id_fkey foreign key (user_id) references users (id) on delete cascade
+--   ) tablespace pg_default;
+
+-- -- Create receipt_items table for parsed items from receipts
+-- create table
+--   public.receipt_items (
+--     id text not null,
+--     receipt_id text not null,
+--     name text not null,
+--     quantity decimal not null,
+--     unit_price decimal not null,
+--     total_price decimal not null,
+--     category text null,
+--     brand text null,
+--     barcode text null,
+--     description text null,
+--     created_at timestamp with time zone not null default now(),
+--     updated_at timestamp with time zone not null default now(),
+--     constraint receipt_items_pkey primary key (id),
+--     constraint receipt_items_receipt_id_fkey foreign key (receipt_id) references receipts (id) on delete cascade
+--   ) tablespace pg_default;
+
+-- -- Create emissions_logs table for carbon footprint calculations
+-- create table
+--   public.emissions_logs (
+--     id text not null,
+--     receipt_id text not null,
+--     user_id text not null,
+--     total_co2 decimal not null,
+--     breakdown jsonb not null,
+--     calculation_method text null,
+--     carbon_intensity decimal null,
+--     created_at timestamp with time zone not null default now(),
+--     updated_at timestamp with time zone not null default now(),
+--     constraint emissions_logs_pkey primary key (id),
+--     constraint emissions_logs_receipt_id_key unique (receipt_id),
+--     constraint emissions_logs_receipt_id_fkey foreign key (receipt_id) references receipts (id) on delete cascade,
+--     constraint emissions_logs_user_id_fkey foreign key (user_id) references users (id) on delete cascade
+--   ) tablespace pg_default;
+
+-- -- Grant access to authenticated users to read the customers table to get the customer_id based on the email
+-- create policy "Enable read access for authenticated users to customers" on "public"."customers" as PERMISSIVE for SELECT to authenticated using ( true );
+
+-- -- Grant access to authenticated users to read the subscriptions table
+-- create policy "Enable read access for authenticated users to subscriptions" on "public"."subscriptions" as PERMISSIVE for SELECT to authenticated using ( true );
+
+-- -- Grant access to authenticated users for users table
+-- create policy "Enable read access for authenticated users to users" on "public"."users" as PERMISSIVE for SELECT to authenticated using ( true );
+-- create policy "Enable insert access for authenticated users to users" on "public"."users" as PERMISSIVE for INSERT to authenticated with check ( true );
+-- create policy "Enable update access for authenticated users to users" on "public"."users" as PERMISSIVE for UPDATE to authenticated using ( true );
+
+-- -- Grant access to authenticated users for receipts table
+-- create policy "Enable read access for authenticated users to receipts" on "public"."receipts" as PERMISSIVE for SELECT to authenticated using ( auth.uid()::text = user_id );
+-- create policy "Enable insert access for authenticated users to receipts" on "public"."receipts" as PERMISSIVE for INSERT to authenticated with check ( auth.uid()::text = user_id );
+-- create policy "Enable update access for authenticated users to receipts" on "public"."receipts" as PERMISSIVE for UPDATE to authenticated using ( auth.uid()::text = user_id );
+-- create policy "Enable delete access for authenticated users to receipts" on "public"."receipts" as PERMISSIVE for DELETE to authenticated using ( auth.uid()::text = user_id );
+
+-- -- Grant access to authenticated users for receipt_items table
+-- create policy "Enable read access for authenticated users to receipt_items" on "public"."receipt_items" as PERMISSIVE for SELECT to authenticated using ( 
+--   exists (
+--     select 1 from receipts 
+--     where receipts.id = receipt_items.receipt_id 
+--     and receipts.user_id = auth.uid()::text
+--   )
+-- );
+-- create policy "Enable insert access for authenticated users to receipt_items" on "public"."receipt_items" as PERMISSIVE for INSERT to authenticated with check ( 
+--   exists (
+--     select 1 from receipts 
+--     where receipts.id = receipt_items.receipt_id 
+--     and receipts.user_id = auth.uid()::text
+--   )
+-- );
+-- create policy "Enable update access for authenticated users to receipt_items" on "public"."receipt_items" as PERMISSIVE for UPDATE to authenticated using ( 
+--   exists (
+--     select 1 from receipts 
+--     where receipts.id = receipt_items.receipt_id 
+--     and receipts.user_id = auth.uid()::text
+--   )
+-- );
+-- create policy "Enable delete access for authenticated users to receipt_items" on "public"."receipt_items" as PERMISSIVE for DELETE to authenticated using ( 
+--   exists (
+--     select 1 from receipts 
+--     where receipts.id = receipt_items.receipt_id 
+--     and receipts.user_id = auth.uid()::text
+--   )
+-- );
+
+-- -- Grant access to authenticated users for emissions_logs table
+-- create policy "Enable read access for authenticated users to emissions_logs" on "public"."emissions_logs" as PERMISSIVE for SELECT to authenticated using ( auth.uid()::text = user_id );
+-- create policy "Enable insert access for authenticated users to emissions_logs" on "public"."emissions_logs" as PERMISSIVE for INSERT to authenticated with check ( auth.uid()::text = user_id );
+-- create policy "Enable update access for authenticated users to emissions_logs" on "public"."emissions_logs" as PERMISSIVE for UPDATE to authenticated using ( auth.uid()::text = user_id );
+-- create policy "Enable delete access for authenticated users to emissions_logs" on "public"."emissions_logs" as PERMISSIVE for DELETE to authenticated using ( auth.uid()::text = user_id );
