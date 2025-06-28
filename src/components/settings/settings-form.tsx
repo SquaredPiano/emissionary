@@ -71,7 +71,7 @@ export function SettingsForm() {
                 }))}
                 placeholder="15"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-black dark:text-muted-foreground">
                 Target weekly grocery emissions
               </p>
             </div>
@@ -79,10 +79,10 @@ export function SettingsForm() {
               <Label>Current Progress</Label>
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">12.4 kg</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-black dark:text-muted-foreground">
                   This week's emissions
                 </div>
-                <Badge variant="outline" className="mt-2">
+                <Badge variant="outline" className="mt-2 text-black dark:text-muted-foreground">
                   {settings.preferences.emissionGoal > 12.4 ? 'On Track' : 'Over Target'}
                 </Badge>
               </div>
@@ -107,7 +107,7 @@ export function SettingsForm() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Weekly Emission Report</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-black dark:text-muted-foreground">
                   Get a summary of your weekly carbon footprint
                 </p>
               </div>
@@ -125,7 +125,7 @@ export function SettingsForm() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Monthly Progress Report</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-black dark:text-muted-foreground">
                   Monthly summary with trends and insights
                 </p>
               </div>
@@ -143,7 +143,7 @@ export function SettingsForm() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Sustainability Tips</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-black dark:text-muted-foreground">
                   Personalized tips to reduce your emissions
                 </p>
               </div>
@@ -161,7 +161,7 @@ export function SettingsForm() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Achievement Notifications</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-black dark:text-muted-foreground">
                   Celebrate your emission reduction milestones
                 </p>
               </div>
@@ -195,7 +195,7 @@ export function SettingsForm() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Share Anonymous Data</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-black dark:text-muted-foreground">
                   Help improve our emission calculations (no personal info)
                 </p>
               </div>
@@ -213,7 +213,7 @@ export function SettingsForm() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Analytics</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-black dark:text-muted-foreground">
                   Help us improve the app with usage analytics
                 </p>
               </div>
@@ -240,4 +240,6 @@ export function SettingsForm() {
       </div>
     </div>
   );
-} 
+}
+
+// Export a SettingsModal component that renders the settings form inside a modal dialog. 

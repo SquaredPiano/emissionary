@@ -99,6 +99,7 @@ export async function processReceipt(input: z.infer<typeof ProcessReceiptSchema>
       totalCO2: validatedOcrResult.total_carbon_emissions || 0,
       breakdown: OCRService.createEmissionsBreakdown(validatedOcrResult.items),
       calculationMethod: validatedOcrResult.llm_enhanced ? "llm_enhanced" : "basic",
+      llmEnhanced: validatedOcrResult.llm_enhanced || false,
     };
 
     // Save to database
@@ -198,13 +199,13 @@ export async function getReceipts(input: z.infer<typeof GetReceiptsSchema> = {})
     
     return {
       success: false,
-      error: "Failed to fetch receipts",
+      error: "Failed to get receipts",
     };
   }
 }
 
 /**
- * Get a single receipt by ID
+ * Get a specific receipt by ID
  */
 export async function getReceipt(receiptId: string) {
   try {
@@ -243,7 +244,7 @@ export async function getReceipt(receiptId: string) {
     
     return {
       success: false,
-      error: "Failed to fetch receipt",
+      error: "Failed to get receipt",
     };
   }
 }
@@ -269,11 +270,7 @@ export async function updateReceipt(input: z.infer<typeof UpdateReceiptSchema>) 
     }
 
     // Update receipt
-    const result = await DatabaseService.updateReceipt(
-      validatedInput.receiptId,
-      user.id,
-      validatedInput.data
-    );
+    await DatabaseService.updateReceipt(validatedInput.receiptId, user.id, validatedInput.data);
 
     // Revalidate relevant pages
     revalidatePath("/dashboard");
@@ -281,12 +278,11 @@ export async function updateReceipt(input: z.infer<typeof UpdateReceiptSchema>) 
 
     return {
       success: true,
-      data: result,
       message: "Receipt updated successfully",
     };
   } catch (error) {
     const { userId } = await auth();
-    logger.error("Update receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined, receiptId: input.receiptId });
+    logger.error("Update receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
     
     if (error instanceof z.ZodError) {
       return {
@@ -330,10 +326,7 @@ export async function deleteReceipt(input: z.infer<typeof DeleteReceiptSchema>) 
     }
 
     // Delete receipt
-    const result = await DatabaseService.deleteReceipt(
-      validatedInput.receiptId,
-      user.id
-    );
+    await DatabaseService.deleteReceipt(validatedInput.receiptId, user.id);
 
     // Revalidate relevant pages
     revalidatePath("/dashboard");
@@ -341,12 +334,11 @@ export async function deleteReceipt(input: z.infer<typeof DeleteReceiptSchema>) 
 
     return {
       success: true,
-      data: result,
       message: "Receipt deleted successfully",
     };
   } catch (error) {
     const { userId } = await auth();
-    logger.error("Delete receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined, receiptId: input.receiptId });
+    logger.error("Delete receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
     
     if (error instanceof z.ZodError) {
       return {
@@ -406,7 +398,7 @@ export async function getEmissionsSummary() {
     
     return {
       success: false,
-      error: "Failed to fetch emissions summary",
+      error: "Failed to get emissions summary",
     };
   }
 }
@@ -448,7 +440,7 @@ export async function getAnalytics() {
     
     return {
       success: false,
-      error: "Failed to fetch analytics",
+      error: "Failed to get analytics",
     };
   }
 } 

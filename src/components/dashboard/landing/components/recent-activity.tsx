@@ -58,8 +58,8 @@ export function RecentActivity({ data = mockRecentActivity }: RecentActivityProp
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="text-center">
-            <div className="text-muted-foreground mb-2">📝</div>
-            <p className="text-muted-foreground">No receipts uploaded yet</p>
+            <div className="text-black dark:text-muted-foreground mb-2">📝</div>
+            <p className="text-black dark:text-muted-foreground">No receipts uploaded yet</p>
           </div>
         </CardContent>
       </Card>
@@ -82,10 +82,10 @@ export function RecentActivity({ data = mockRecentActivity }: RecentActivityProp
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <Store className="h-3 w-3 text-muted-foreground" />
+                    <Store className="h-3 w-3 text-black dark:text-muted-foreground" />
                     <span className="font-medium">{activity.merchant}</span>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <div className="flex items-center space-x-4 text-sm text-black dark:text-muted-foreground">
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-3 w-3" />
                       <span>{new Date(activity.date).toLocaleDateString()}</span>
