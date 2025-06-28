@@ -13,9 +13,9 @@ import {
 interface CategoryPieChartProps {
   data: {
     category: string | null;
-      _sum: {
-    emissions: number | null;
-  };
+    _sum: {
+      emissions: number | null;
+    };
   }[];
 }
 
