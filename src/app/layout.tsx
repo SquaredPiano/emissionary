@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={'min-h-full dark'}>
+      <html lang="en" className='dark flex items-center justify-center'>
         <body className={inter.className}>
           {children}
           <Toaster />
