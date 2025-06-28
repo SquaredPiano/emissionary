@@ -9,7 +9,7 @@ const sidebarItems = [
   {
     title: 'Dashboard',
     icon: <Home className="h-6 w-6" />,
-    href: '/dashboard',
+    href: '/dashboard' as const,
   },
 ];
 

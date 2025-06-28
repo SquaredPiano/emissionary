@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { AuthenticationForm } from '@/components/authentication/authentication-form';
-import { signup } from '@/app/signup/actions';
+import { signup } from '@/app/sign-up/[[...sign-up]]/actions';
 import { useToast } from '@/components/ui/use-toast';
 
 export function SignupForm() {
