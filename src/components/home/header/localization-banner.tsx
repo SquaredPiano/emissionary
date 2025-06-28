@@ -19,10 +19,10 @@ export function LocalizationBanner({ country, onCountryChange }: Props) {
       <div className={'flex flex-1 justify-center items-center p-2 gap-8'}>
         <div className={'flex items-center gap-4'}>
           <Image src={'/assets/icons/localization-icon.svg'} alt={'Localization Icon'} width={36} height={36} />
-          <p className={'text-[16px] font-medium text-center'}>Preview localized prices</p>
+          <p className={'text-[16px] font-medium text-center'}>Preview localized content</p>
           <Link
             className={'text-[16px] text-muted-foreground'}
-            href={'https://developer.paddle.com/build/products/offer-localized-pricing'}
+            href={'#'}
             target={'_blank'}
           >
             <span className={'flex items-center gap-1'}>

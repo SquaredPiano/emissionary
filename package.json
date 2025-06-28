@@ -1,5 +1,5 @@
 {
-  "name": "@paddle/nextjs-starter-kit",
+  "name": "emissionary",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -23,8 +23,6 @@
     "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "@paddle/paddle-js": "^1.4.2",
-    "@paddle/paddle-node-sdk": "^2.8.0",
     "@radix-ui/react-accordion": "^1.2.10",
     "@radix-ui/react-dialog": "^1.1.13",
     "@radix-ui/react-dropdown-menu": "^2.1.14",
@@ -69,5 +67,6 @@
       "@types/react": "19.1.8",
       "@types/react-dom": "19.1.6"
     }
-  }
+  },
+  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
 }
