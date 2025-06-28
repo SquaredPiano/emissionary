@@ -1,13 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { ArrowUpRight } from "lucide-react"
-import Link from "next/link"
-import type { Receipt } from "@prisma/client"
-import { format } from "date-fns"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
+import type { Receipt } from '@prisma/client';
+import { format } from 'date-fns';
 
 interface RecentActivityProps {
-  receipts: Receipt[]
+  receipts: Receipt[];
 }
 
 export function RecentActivity({ receipts }: RecentActivityProps) {
@@ -41,7 +41,7 @@ export function RecentActivity({ receipts }: RecentActivityProps) {
                   <TableCell>
                     <div className="font-medium">{receipt.store_name}</div>
                   </TableCell>
-                  <TableCell>{format(new Date(receipt.created_at), "PPP")}</TableCell>
+                  <TableCell>{format(new Date(receipt.created_at), 'PPP')}</TableCell>
                   <TableCell className="text-right">{Number(receipt.total_emissions).toFixed(1)} kg</TableCell>
                 </TableRow>
               ))
@@ -56,5 +56,5 @@ export function RecentActivity({ receipts }: RecentActivityProps) {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   type ColumnDef,
   flexRender,
@@ -11,63 +11,63 @@ import {
   useReactTable,
   type SortingState,
   type ColumnFiltersState,
-} from "@tanstack/react-table"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import type { Receipt } from "@prisma/client"
-import { format } from "date-fns"
-import { ArrowUpDown } from "lucide-react"
+} from '@tanstack/react-table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import type { Receipt } from '@prisma/client';
+import { format } from 'date-fns';
+import { ArrowUpDown } from 'lucide-react';
 
 export const columns: ColumnDef<Receipt>[] = [
   {
-    accessorKey: "store_name",
+    accessorKey: 'store_name',
     header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
         Store
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <div className="font-medium">{row.getValue("store_name")}</div>,
+    cell: ({ row }) => <div className="font-medium">{row.getValue('store_name')}</div>,
   },
   {
-    accessorKey: "created_at",
+    accessorKey: 'created_at',
     header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
         Date
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <div>{format(new Date(row.getValue("created_at")), "PPP")}</div>,
+    cell: ({ row }) => <div>{format(new Date(row.getValue('created_at')), 'PPP')}</div>,
   },
   {
-    accessorKey: "total_emissions",
+    accessorKey: 'total_emissions',
     header: ({ column }) => (
       <div className="text-right">
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
           Emissions (kg)
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       </div>
     ),
     cell: ({ row }) => (
-      <div className="text-right font-medium">{Number(row.getValue("total_emissions")).toFixed(1)}</div>
+      <div className="text-right font-medium">{Number(row.getValue('total_emissions')).toFixed(1)}</div>
     ),
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("status")}</div>,
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => <div className="capitalize">{row.getValue('status')}</div>,
   },
-]
+];
 
 interface HistoryTableProps {
-  data: Receipt[]
+  data: Receipt[];
 }
 
 export function HistoryTable({ data }: HistoryTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const table = useReactTable({
     data,
@@ -82,15 +82,15 @@ export function HistoryTable({ data }: HistoryTableProps) {
       sorting,
       columnFilters,
     },
-  })
+  });
 
   return (
     <div>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter by store..."
-          value={(table.getColumn("store_name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) => table.getColumn("store_name")?.setFilterValue(event.target.value)}
+          value={(table.getColumn('store_name')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('store_name')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
       </div>
@@ -110,7 +110,7 @@ export function HistoryTable({ data }: HistoryTableProps) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
@@ -135,5 +135,5 @@ export function HistoryTable({ data }: HistoryTableProps) {
         </Button>
       </div>
     </div>
-  )
+  );
 }

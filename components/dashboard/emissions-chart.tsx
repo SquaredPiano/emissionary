@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import { CartesianGrid, XAxis, YAxis, Line, LineChart } from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { CartesianGrid, XAxis, YAxis, Line, LineChart } from 'recharts';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 interface EmissionsChartProps {
   data: {
-    date: string
-    emissions: number
-  }[]
+    date: string;
+    emissions: number;
+  }[];
 }
 
 export function EmissionsChart({ data }: EmissionsChartProps) {
@@ -23,7 +23,7 @@ export function EmissionsChart({ data }: EmissionsChartProps) {
           <p className="text-muted-foreground">Upload a receipt to see your emissions trends.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -44,5 +44,5 @@ export function EmissionsChart({ data }: EmissionsChartProps) {
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

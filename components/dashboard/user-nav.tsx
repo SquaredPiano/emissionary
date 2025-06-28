@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,38 +8,38 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { createClient } from "@/lib/supabase/server"
-import prisma from "@/lib/prisma"
-import { redirect } from "next/navigation"
+} from '@/components/ui/dropdown-menu';
+import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
+import { redirect } from 'next/navigation';
 
 export async function UserNav() {
-  const supabase = createClient()
+  const supabase = createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login")
+    redirect('/login');
   }
 
   const userProfile = await prisma.profile.findUnique({
     where: { id: user.id },
-  })
+  });
 
   const handleSignOut = async () => {
-    "use server"
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    return redirect("/login")
-  }
+    'use server';
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    return redirect('/login');
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={userProfile?.avatar_url || "/placeholder.svg"} alt={userProfile?.full_name || ""} />
+            <AvatarImage src={userProfile?.avatar_url || '/placeholder.svg'} alt={userProfile?.full_name || ''} />
             <AvatarFallback>
               {userProfile?.full_name?.[0].toUpperCase() || user.email?.[0].toUpperCase()}
             </AvatarFallback>
@@ -66,5 +66,5 @@ export async function UserNav() {
         </form>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

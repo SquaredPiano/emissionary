@@ -1,105 +1,111 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import { Loader2, ScanText, BrainCircuit, CheckCircle2 } from "lucide-react"
-import { Button } from "../ui/button"
-import Link from "next/link"
-import type { EmissionsResponse } from "@/lib/types"
-import { Card, CardContent } from "../ui/card"
+import { useEffect, useState } from 'react';
+import { Loader2, ScanText, BrainCircuit, CheckCircle2 } from 'lucide-react';
+import { Button } from '../ui/button';
+import Link from 'next/link';
+import type { EmissionsResponse } from '@/lib/types';
+import { Card, CardContent } from '../ui/card';
 
 const steps = [
-  { text: "Extracting items with OCR...", icon: ScanText },
-  { text: "Calculating emissions with AI...", icon: BrainCircuit },
-]
+  { text: 'Extracting items with OCR...', icon: ScanText },
+  { text: 'Calculating emissions with AI...', icon: BrainCircuit },
+];
 
 export function OcrStatus({
   isProcessing,
   onComplete,
   onReset,
 }: {
-  isProcessing: boolean
-  onComplete: () => void
-  onReset: () => void
+  isProcessing: boolean;
+  onComplete: () => void;
+  onReset: () => void;
 }) {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [emissionsResult, setEmissionsResult] = useState<EmissionsResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [ocrData, setOcrData] = useState<any>(null)
+  const [currentStep, setCurrentStep] = useState(0);
+  const [emissionsResult, setEmissionsResult] = useState<EmissionsResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ocrData, setOcrData] = useState<{
+    raw_text?: string;
+    parsed_data?: {
+      store_name?: string;
+      items?: Array<{ quantity?: string; item_name: string; unit_price?: string }>;
+    };
+  } | null>(null);
 
   useEffect(() => {
-    if (!isProcessing) return
+    if (!isProcessing) return;
 
     const processReceipt = async () => {
       if (currentStep === 0) {
         // Get OCR results from localStorage
         try {
-          const storedOcrResult = localStorage.getItem('ocrResult')
+          const storedOcrResult = localStorage.getItem('ocrResult');
           if (storedOcrResult) {
-            const parsedOcrData = JSON.parse(storedOcrResult)
-            setOcrData(parsedOcrData)
-            console.log('Retrieved OCR data:', parsedOcrData)
+            const parsedOcrData = JSON.parse(storedOcrResult);
+            setOcrData(parsedOcrData);
+            console.log('Retrieved OCR data:', parsedOcrData);
           }
         } catch (error) {
-          console.error('Failed to retrieve OCR data:', error)
+          console.error('Failed to retrieve OCR data:', error);
         }
-        
+
         // Move to emissions calculation step
-        setTimeout(() => setCurrentStep(1), 1500)
+        setTimeout(() => setCurrentStep(1), 1500);
       } else if (currentStep === 1) {
         // Prepare items for emissions calculation
-        let itemsForCalculation: string[] = []
-        
+        let itemsForCalculation: string[] = [];
+
         if (ocrData?.parsed_data?.items) {
           // Use structured OCR data if available
-          itemsForCalculation = ocrData.parsed_data.items.map((item: any) => 
-            `${item.quantity || ''} ${item.item_name}`.trim()
-          )
+          itemsForCalculation = ocrData.parsed_data.items.map((item) =>
+            `${item.quantity || ''} ${item.item_name}`.trim(),
+          );
         } else if (ocrData?.raw_text) {
           // Fallback to raw text processing
           itemsForCalculation = ocrData.raw_text
             .split('\n')
             .filter((line: string) => line.trim().length > 0)
-            .slice(0, 10) // Limit to first 10 lines to avoid noise
+            .slice(0, 10); // Limit to first 10 lines to avoid noise
         } else {
           // Final fallback to mock data
-          itemsForCalculation = ["1kg Beef Mince", "2L Semi-Skimmed Milk", "500g Lentils"]
+          itemsForCalculation = ['1kg Beef Mince', '2L Semi-Skimmed Milk', '500g Lentils'];
         }
 
-        console.log('Items for calculation:', itemsForCalculation)
+        console.log('Items for calculation:', itemsForCalculation);
 
         // Call our AI service for emissions calculation
         try {
-          const response = await fetch("/api/calculate-emissions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
+          const response = await fetch('/api/calculate-emissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
               items: itemsForCalculation,
               storeName: ocrData?.parsed_data?.store_name || 'Unknown Store',
-              fileUrl: null // Could be added if you store uploaded files
+              fileUrl: null, // Could be added if you store uploaded files
             }),
-          })
+          });
 
           if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`)
+            throw new Error(`API Error: ${response.statusText}`);
           }
 
-          const data: EmissionsResponse = await response.json()
-          setEmissionsResult(data)
-          
+          const data: EmissionsResponse = await response.json();
+          setEmissionsResult(data);
+
           // Clear OCR data from localStorage after successful processing
-          localStorage.removeItem('ocrResult')
-        } catch (err: any) {
-          console.error('Emissions calculation error:', err)
-          setError("Could not calculate emissions. Please try again.")
+          localStorage.removeItem('ocrResult');
+        } catch (err) {
+          console.error('Emissions calculation error:', err);
+          setError('Could not calculate emissions. Please try again.');
         } finally {
           // Move to completion regardless of success or failure
-          setTimeout(() => onComplete(), 1000)
+          setTimeout(() => onComplete(), 1000);
         }
       }
-    }
+    };
 
-    processReceipt()
-  }, [isProcessing, currentStep, onComplete, ocrData])
+    processReceipt();
+  }, [isProcessing, currentStep, onComplete, ocrData]);
 
   if (!isProcessing) {
     return (
@@ -122,7 +128,7 @@ export function OcrStatus({
                 <p className="text-sm bg-muted p-3 rounded-md">{emissionsResult.summary}</p>
               </CardContent>
             </Card>
-            
+
             {ocrData?.parsed_data && (
               <Card>
                 <CardContent className="p-4">
@@ -131,7 +137,7 @@ export function OcrStatus({
                     Store: {ocrData.parsed_data.store_name || 'Unknown'}
                   </p>
                   <div className="text-xs bg-muted p-3 rounded-md max-h-32 overflow-y-auto">
-                    {ocrData.parsed_data.items?.map((item: any, index: number) => (
+                    {ocrData.parsed_data.items?.map((item, index: number) => (
                       <div key={index} className="mb-1">
                         {item.quantity} {item.item_name} - ${item.unit_price || 'N/A'}
                       </div>
@@ -154,10 +160,10 @@ export function OcrStatus({
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  const CurrentIcon = steps[currentStep].icon
+  const CurrentIcon = steps[currentStep].icon;
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-64 text-center">
@@ -172,10 +178,10 @@ export function OcrStatus({
             <div
               key={index}
               className={`flex-1 text-center text-xs font-medium ${
-                index <= currentStep ? "text-primary" : "text-muted-foreground"
+                index <= currentStep ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              {step.text.split("...")[0]}
+              {step.text.split('...')[0]}
             </div>
           ))}
         </div>
@@ -187,5 +193,5 @@ export function OcrStatus({
         </div>
       </div>
     </div>
-  )
+  );
 }

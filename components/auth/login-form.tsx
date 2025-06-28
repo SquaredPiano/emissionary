@@ -1,26 +1,26 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Leaf } from "lucide-react"
-import Link from "next/link"
-import { useActionState } from "react"
-import { useFormStatus } from "react-dom"
-import { login } from "./actions"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Leaf } from 'lucide-react';
+import Link from 'next/link';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { login } from './actions';
 
 function SubmitButton() {
-  const { pending } = useFormStatus()
+  const { pending } = useFormStatus();
   return (
     <Button className="w-full" type="submit" disabled={pending}>
-      {pending ? "Signing In..." : "Sign In"}
+      {pending ? 'Signing In...' : 'Sign In'}
     </Button>
-  )
+  );
 }
 
 export function LoginForm() {
-  const [state, formAction] = useActionState(login, null)
+  const [state, formAction] = useActionState(login, null);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
@@ -48,7 +48,7 @@ export function LoginForm() {
             <SubmitButton />
           </form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
               Sign up
             </Link>
@@ -56,5 +56,5 @@ export function LoginForm() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

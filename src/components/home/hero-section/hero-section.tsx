@@ -1,5 +1,5 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export function HeroSection() {
   return (
@@ -11,11 +11,11 @@ export function HeroSection() {
           <span className="text-green-600">Save our planet.</span>
         </h1>
         <p className={'mt-6 text-[18px] leading-[27px] md:text-[20px] md:leading-[30px] text-gray-600'}>
-          AI-powered receipt scanning meets carbon footprint tracking. 
+          AI-powered receipt scanning meets carbon footprint tracking.
           <br />
           Understand your environmental impact and make better choices.
         </p>
-        
+
         <div className="mt-8 flex gap-4 justify-center">
           <Link href="/signup">
             <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg">
@@ -28,12 +28,12 @@ export function HeroSection() {
             </Button>
           </Link>
         </div>
-        
+
         <div className="mt-12 flex justify-center">
           <div className="relative">
-            <img 
-              src="/hero.png" 
-              alt="Emissionary Dashboard" 
+            <img
+              src="/hero.png"
+              alt="Emissionary Dashboard"
               className="rounded-lg shadow-2xl border border-gray-200 max-w-4xl w-full"
             />
           </div>

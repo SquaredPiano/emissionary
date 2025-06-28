@@ -13,17 +13,20 @@ This service provides OCR (Optical Character Recognition) processing for receipt
 ### 1. Install Tesseract OCR
 
 **Windows:**
+
 ```bash
 # Download and install from: https://github.com/UB-Mannheim/tesseract/wiki
 # Add Tesseract to your PATH environment variable
 ```
 
 **macOS:**
+
 ```bash
 brew install tesseract
 ```
 
 **Linux (Ubuntu/Debian):**
+
 ```bash
 sudo apt update
 sudo apt install tesseract-ocr
@@ -51,6 +54,7 @@ pip install -r requirements.txt
 ### 3. Configure Environment
 
 Create a `.env` file in the `python_ocr` directory:
+
 ```
 OPENAI_API_KEY=your_openai_api_key_here
 FLASK_ENV=development
@@ -68,9 +72,11 @@ The service will run on `http://localhost:5000`
 ## API Endpoints
 
 ### POST /api/ocr/process
+
 Process a receipt image and return structured data.
 
 **Request:**
+
 ```json
 {
   "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..."
@@ -78,6 +84,7 @@ Process a receipt image and return structured data.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -107,6 +114,7 @@ Process a receipt image and return structured data.
 ```
 
 ### GET /api/ocr/health
+
 Health check endpoint.
 
 ## Integration with Next.js
@@ -123,13 +131,16 @@ The Python service integrates with your Next.js app through the `/api/ocr/proces
 ## Troubleshooting
 
 **Tesseract not found:**
+
 - Ensure Tesseract is installed and in your PATH
 - On Windows, you might need to set the tesseract path in the Python code
 
 **OpenCV issues:**
+
 - Try installing without headless: `pip install opencv-python`
 - On some systems: `pip install opencv-python-headless`
 
 **CORS errors:**
+
 - The Flask app includes CORS headers for Next.js integration
-- Ensure both services are running on the correct ports 
+- Ensure both services are running on the correct ports

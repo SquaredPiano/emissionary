@@ -1,40 +1,40 @@
-"use client"
+'use client';
 
-import { Pie, PieChart, Cell } from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Pie, PieChart, Cell } from 'recharts';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
-} from "@/components/ui/chart"
+} from '@/components/ui/chart';
 
 interface CategoryPieChartProps {
   data: {
-    category: string | null
-    _sum: {
-      emissions: any
-    }
-  }[]
+    category: string | null;
+      _sum: {
+    emissions: number | null;
+  };
+  }[];
 }
 
 const CHART_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-]
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
 
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
   const chartData = data
     .filter((item) => item._sum.emissions && item._sum.emissions > 0)
     .map((item, index) => ({
-      name: item.category || "Other",
+      name: item.category || 'Other',
       value: Number(item._sum.emissions),
       fill: CHART_COLORS[index % CHART_COLORS.length],
-    }))
+    }));
 
   if (chartData.length === 0) {
     return (
@@ -47,7 +47,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
           <p className="text-muted-foreground text-center">No category data available. Upload a receipt to start.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -73,5 +73,5 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

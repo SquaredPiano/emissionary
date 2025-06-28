@@ -5,7 +5,7 @@ export default async function Home() {
   try {
     const { userId } = await auth();
     return <HomePage user={userId ? { id: userId } : null} />;
-  } catch (error) {
+  } catch {
     // If Clerk is not properly configured, just show the homepage without auth
     return <HomePage user={null} />;
   }

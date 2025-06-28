@@ -1,12 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Leaf, TrendingUp, TrendingDown, Scale } from "lucide-react"
-import type { ReceiptItem } from "@prisma/client"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Leaf, TrendingUp, TrendingDown, Scale } from 'lucide-react';
+import type { ReceiptItem } from '@prisma/client';
 
 interface KpiWidgetsProps {
-  totalEmissionsWeek: number
-  weeklyAverage: number
-  highestItem?: ReceiptItem | null
-  lowestItem?: ReceiptItem | null
+  totalEmissionsWeek: number;
+  weeklyAverage: number;
+  highestItem?: ReceiptItem | null;
+  lowestItem?: ReceiptItem | null;
 }
 
 export function KpiWidgets({ totalEmissionsWeek, weeklyAverage, highestItem, lowestItem }: KpiWidgetsProps) {
@@ -17,23 +17,23 @@ export function KpiWidgets({ totalEmissionsWeek, weeklyAverage, highestItem, low
       icon: Leaf,
     },
     {
-      title: "Weekly Average (This Month)",
+      title: 'Weekly Average (This Month)',
       value: `${weeklyAverage.toFixed(1)} kg`,
       icon: Scale,
     },
     {
-      title: "Highest Emission Item",
-      value: highestItem?.item_name || "N/A",
-      subValue: highestItem ? `${Number(highestItem.emissions).toFixed(1)} kg` : "",
+      title: 'Highest Emission Item',
+      value: highestItem?.item_name || 'N/A',
+      subValue: highestItem ? `${Number(highestItem.emissions).toFixed(1)} kg` : '',
       icon: TrendingUp,
     },
     {
-      title: "Lowest Emission Item",
-      value: lowestItem?.item_name || "N/A",
-      subValue: lowestItem ? `${Number(lowestItem.emissions).toFixed(1)} kg` : "",
+      title: 'Lowest Emission Item',
+      value: lowestItem?.item_name || 'N/A',
+      subValue: lowestItem ? `${Number(lowestItem.emissions).toFixed(1)} kg` : '',
       icon: TrendingDown,
     },
-  ]
+  ];
 
   return (
     <>
@@ -52,5 +52,5 @@ export function KpiWidgets({ totalEmissionsWeek, weeklyAverage, highestItem, low
         </Card>
       ))}
     </>
-  )
+  );
 }

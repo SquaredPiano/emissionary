@@ -1,14 +1,14 @@
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { Home, Upload, History, Settings, PanelLeft, Leaf } from "lucide-react"
-import Link from "next/link"
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Home, Upload, History, Settings, PanelLeft, Leaf } from 'lucide-react';
+import Link from 'next/link';
 
 const menuItems = [
-  { href: "/dashboard", icon: Home, label: "Dashboard" },
-  { href: "/upload", icon: Upload, label: "Upload Receipt" },
-  { href: "/history", icon: History, label: "History" },
-  { href: "/settings", icon: Settings, label: "Settings" },
-]
+  { href: '/dashboard', icon: Home, label: 'Dashboard' },
+  { href: '/upload', icon: Upload, label: 'Upload Receipt' },
+  { href: '/history', icon: History, label: 'History' },
+  { href: '/settings', icon: Settings, label: 'Settings' },
+];
 
 export function MobileNav() {
   return (
@@ -41,5 +41,5 @@ export function MobileNav() {
         </nav>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

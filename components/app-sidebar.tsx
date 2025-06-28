@@ -1,4 +1,4 @@
-import { UserButton } from "@clerk/nextjs"
+import { UserButton } from '@clerk/nextjs';
 import {
   Sidebar,
   SidebarContent,
@@ -11,16 +11,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { BarChart3, Upload, History, Settings, Leaf } from "lucide-react"
-import Link from "next/link"
+} from '@/components/ui/sidebar';
+import { BarChart3, Upload, History, Settings, Leaf } from 'lucide-react';
+import Link from 'next/link';
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-  { name: "Upload", href: "/upload", icon: Upload },
-  { name: "History", href: "/history", icon: History },
-  { name: "Settings", href: "/settings", icon: Settings },
-]
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Upload', href: '/upload', icon: Upload },
+  { name: 'History', href: '/history', icon: History },
+  { name: 'Settings', href: '/settings', icon: Settings },
+];
 
 export function AppSidebar() {
   return (
@@ -67,11 +67,11 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5">
-              <UserButton 
+              <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "h-8 w-8"
-                  }
+                    avatarBox: 'h-8 w-8',
+                  },
                 }}
               />
               <span className="text-sm font-medium">Account</span>
@@ -81,5 +81,5 @@ export function AppSidebar() {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

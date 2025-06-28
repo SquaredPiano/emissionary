@@ -1,20 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Lightbulb, CheckCircle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Lightbulb, CheckCircle } from 'lucide-react';
 
 const tips = [
   {
-    tip: "Swap beef for chicken in one meal this week to save ~20kg of CO2e.",
+    tip: 'Swap beef for chicken in one meal this week to save ~20kg of CO2e.',
     completed: true,
   },
   {
-    tip: "Try oat milk instead of dairy milk. It has 70% lower emissions.",
+    tip: 'Try oat milk instead of dairy milk. It has 70% lower emissions.',
     completed: false,
   },
   {
-    tip: "Buy local produce to reduce transportation emissions.",
+    tip: 'Buy local produce to reduce transportation emissions.',
     completed: false,
   },
-]
+];
 
 export function ActionableTips() {
   return (
@@ -38,5 +38,5 @@ export function ActionableTips() {
         </ul>
       </CardContent>
     </Card>
-  )
+  );
 }
