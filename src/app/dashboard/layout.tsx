@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout/dashboard-layout';
-import { createClient } from '@/utils/supabase/server';
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
 interface Props {
@@ -8,10 +8,11 @@ interface Props {
 }
 
 export default async function Layout({ children }: Props) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) {
-    redirect('/login');
+  const { userId } = await auth();
+  
+  if (!userId) {
+    redirect('/sign-in');
   }
+
   return <DashboardLayout>{children}</DashboardLayout>;
 }
