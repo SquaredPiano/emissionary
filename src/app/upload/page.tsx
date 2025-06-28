@@ -1,13 +1,14 @@
 import { DashboardPageHeader } from '@/components/dashboard/layout/dashboard-page-header';
-import { FileUploader } from '@/components/upload/file-uploader';
+import { SimpleUpload } from '@/components/upload/simple-upload';
 import { OCRStatus } from '@/components/upload/ocr-status';
 import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export default async function UploadPage() {
   const { userId } = await auth();
   
   if (!userId) {
-    throw new Error('User not authenticated');
+    redirect('/sign-in');
   }
 
   return (
@@ -15,7 +16,7 @@ export default async function UploadPage() {
       <DashboardPageHeader pageTitle="Upload Receipt" showBackButton={true} />
       
       <div className="grid gap-6 lg:grid-cols-2">
-        <FileUploader />
+        <SimpleUpload />
         <OCRStatus />
       </div>
     </main>

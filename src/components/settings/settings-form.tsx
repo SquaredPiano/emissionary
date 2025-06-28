@@ -113,7 +113,7 @@ export function SettingsForm() {
               </div>
               <Switch 
                 checked={settings.notifications.weeklyReport}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked: boolean) => 
                   setSettings(prev => ({ 
                     ...prev, 
                     notifications: { ...prev.notifications, weeklyReport: checked }
@@ -131,7 +131,7 @@ export function SettingsForm() {
               </div>
               <Switch 
                 checked={settings.notifications.monthlyReport}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked: boolean) => 
                   setSettings(prev => ({ 
                     ...prev, 
                     notifications: { ...prev.notifications, monthlyReport: checked }
@@ -149,7 +149,7 @@ export function SettingsForm() {
               </div>
               <Switch 
                 checked={settings.notifications.tips}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked: boolean) => 
                   setSettings(prev => ({ 
                     ...prev, 
                     notifications: { ...prev.notifications, tips: checked }
@@ -167,7 +167,7 @@ export function SettingsForm() {
               </div>
               <Switch 
                 checked={settings.notifications.achievements}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked: boolean) => 
                   setSettings(prev => ({ 
                     ...prev, 
                     notifications: { ...prev.notifications, achievements: checked }
@@ -201,7 +201,7 @@ export function SettingsForm() {
               </div>
               <Switch 
                 checked={settings.privacy.shareData}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked: boolean) => 
                   setSettings(prev => ({ 
                     ...prev, 
                     privacy: { ...prev.privacy, shareData: checked }
@@ -219,7 +219,7 @@ export function SettingsForm() {
               </div>
               <Switch 
                 checked={settings.privacy.analytics}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked: boolean) => 
                   setSettings(prev => ({ 
                     ...prev, 
                     privacy: { ...prev.privacy, analytics: checked }

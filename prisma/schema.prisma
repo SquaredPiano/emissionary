@@ -21,12 +21,15 @@ model User {
   email     String   @unique
   firstName String?
   lastName  String?
+  avatar    String?
+  bio       String?
+  location  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  receipts Receipt[]
-  emissions Emissions[]
+  receipts     Receipt[]
+  emissionsLogs EmissionsLog[]
 
   @@map("users")
 }
@@ -38,23 +41,50 @@ model Receipt {
   merchant    String
   total       Decimal
   date        DateTime
-  items       Json?    // Store receipt items as JSON
+  currency    String   @default("USD")
+  taxAmount   Decimal? @default(0)
+  tipAmount   Decimal? @default(0)
+  paymentMethod String?
+  receiptNumber String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emission Emissions?
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receiptItems ReceiptItem[]
+  emissionsLog EmissionsLog?
 
   @@map("receipts")
 }
 
-model Emissions {
+model ReceiptItem {
+  id          String   @id @default(cuid())
+  receiptId   String
+  name        String
+  quantity    Decimal
+  unitPrice   Decimal
+  totalPrice  Decimal
+  category    String?
+  brand       String?
+  barcode     String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@map("receipt_items")
+}
+
+model EmissionsLog {
   id         String   @id @default(cuid())
   receiptId  String   @unique
   userId     String
   totalCO2   Decimal
   breakdown  Json     // Store emission breakdown by category
+  calculationMethod String? // Method used for calculation
+  carbonIntensity   Decimal? // Carbon intensity factor used
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -62,5 +92,5 @@ model Emissions {
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("emissions")
+  @@map("emissions_logs")
 }

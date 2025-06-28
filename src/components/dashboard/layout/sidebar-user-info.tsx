@@ -2,19 +2,22 @@
 
 import { Separator } from '@/components/ui/separator';
 import { LogOut } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { useClerk } from '@clerk/nextjs';
 import { MouseEvent } from 'react';
 import { useUserInfo } from '@/hooks/useUserInfo';
 
 export function SidebarUserInfo() {
-  const supabase = createClient();
-  const { user } = useUserInfo(supabase);
+  const { signOut } = useClerk();
+  const { user, clerkUser } = useUserInfo();
 
   async function handleLogout(e: MouseEvent) {
     e.preventDefault();
-    await supabase.auth.signOut();
-    location.reload();
+    await signOut();
   }
+
+  const displayName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}`
+    : clerkUser?.fullName || user?.firstName || 'User';
 
   return (
     <div className={'flex flex-col items-start pb-8 px-2 text-sm font-medium lg:px-4'}>
@@ -22,10 +25,10 @@ export function SidebarUserInfo() {
       <div className={'flex w-full flex-row mt-6 items-center justify-between'}>
         <div className={'flex flex-col items-start justify-center overflow-hidden text-ellipsis'}>
           <div className={'text-sm leading-5 font-semibold w-full overflow-hidden text-ellipsis'}>
-            {user?.user_metadata?.full_name}
+            {displayName}
           </div>
           <div className={'text-sm leading-5 text-muted-foreground w-full overflow-hidden text-ellipsis'}>
-            {user?.email}
+            {user?.email || clerkUser?.primaryEmailAddress?.emailAddress}
           </div>
         </div>
         <div>
