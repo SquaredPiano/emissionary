@@ -54,7 +54,7 @@ export function DashboardUsageCardGroup() {
         >
           <CardHeader className="p-0 space-y-0">
             <CardTitle className="flex justify-between items-center mb-6">
-              <span className={'text-base leading-4 font-medium'}>{card.title}</span>
+              <span className={'text-base leading-4 font-medium text-foreground'}>{card.title}</span>
               {card.icon}
             </CardTitle>
             <CardDescription className={'text-[2rem] leading-[2.5rem] text-primary font-bold'}>{card.value}</CardDescription>
@@ -63,7 +63,7 @@ export function DashboardUsageCardGroup() {
             <div className={`text-sm leading-[14px] pt-2 font-medium ${
               card.trend === 'positive' ? 'text-green-500' : 
               card.trend === 'negative' ? 'text-red-500' : 
-              'text-secondary'
+              'text-muted-foreground'
             }`}>
               {card.change}
             </div>
