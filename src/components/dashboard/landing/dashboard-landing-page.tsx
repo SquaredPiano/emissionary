@@ -1,16 +1,27 @@
 import { DashboardUsageCardGroup } from '@/components/dashboard/landing/components/dashboard-usage-card-group';
-import { DashboardTutorialCard } from '@/components/dashboard/landing/components/dashboard-tutorial-card';
-import { DashboardTeamMembersCard } from '@/components/dashboard/landing/components/dashboard-team-members-card';
+import { EmissionsChart } from '@/components/dashboard/landing/components/emissions-chart';
+import { CategoryBreakdown } from '@/components/dashboard/landing/components/category-breakdown';
+import { RecentActivity } from '@/components/dashboard/landing/components/recent-activity';
+import { ActionableTips } from '@/components/dashboard/landing/components/actionable-tips';
 
 export function DashboardLandingPage() {
   return (
-    <div className={'grid flex-1 items-start gap-6 p-0 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}>
-      <div className={'grid auto-rows-max items-start gap-6 lg:col-span-2'}>
+    <div className="space-y-6">
+      {/* KPI Cards Row */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardUsageCardGroup />
       </div>
-      <div className={'grid auto-rows-max items-start gap-6'}>
-        <DashboardTeamMembersCard />
-        <DashboardTutorialCard />
+
+      {/* Charts Row */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <EmissionsChart />
+        <CategoryBreakdown />
+      </div>
+
+      {/* Activity and Tips Row */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RecentActivity />
+        <ActionableTips />
       </div>
     </div>
   );

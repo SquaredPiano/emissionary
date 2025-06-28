@@ -1,18 +1,57 @@
+'use client';
+
+import { ArrowLeft } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { MobileSidebar } from '@/components/dashboard/layout/mobile-sidebar';
 
-interface Props {
+interface DashboardPageHeaderProps {
   pageTitle: string;
+  showBackButton?: boolean;
 }
 
-export function DashboardPageHeader({ pageTitle }: Props) {
+export function DashboardPageHeader({ pageTitle, showBackButton = false }: DashboardPageHeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  // Show back button if not on dashboard and showBackButton is true or we're on upload/history/settings
+  const shouldShowBack = showBackButton || (pathname !== '/dashboard' && (pathname.includes('/upload') || pathname.includes('/history') || pathname.includes('/settings')));
+
+  const handleBack = () => {
+    router.push('/dashboard');
+  };
+
   return (
     <div>
-      <div className={'flex items-center gap-6'}>
-        <MobileSidebar />
-        <h1 className="text-lg font-semibold md:text-4xl">{pageTitle}</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {shouldShowBack && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{pageTitle}</h1>
+            <p className="text-muted-foreground">
+              {pathname === '/dashboard' && 'Track your carbon footprint and emissions'}
+              {pathname.includes('/upload') && 'Upload and process your grocery receipts'}
+              {pathname.includes('/history') && 'View your receipt history and emissions data'}
+              {pathname.includes('/settings') && 'Manage your account and preferences'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <MobileSidebar />
+        </div>
       </div>
-      <Separator className={'relative bg-border my-8 dashboard-header-highlight'} />
+      <Separator className="relative bg-border my-8 dashboard-header-highlight" />
     </div>
   );
 }
