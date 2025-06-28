@@ -29,7 +29,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Emissionary - Track Your Carbon Footprint',
   description:
-    'Emissionary is an app to detect your carbon emissions from your receipts. It uses data from your receipt to find your carbon emissions and compares your grocery carbon emissions with the average household.',
+    // 'Emissionary is an app to detect your carbon emissions from your receipts. It uses data from your receipt to find your carbon emissions and compares your grocery carbon emissions with the average household.',
+    'AI-powered receipt scanning meets carbon footprint tracking. Understand your environmental impact and make better choices for our planet.',
+
 };
 
 export default function RootLayout({
@@ -38,14 +40,6 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" className={'min-h-full dark'}>
-        <body className={inter.className}>
-          {children}
-          <Toaster />
-        </body>
-      </html>
-    </ClerkProvider>
     <ClerkProvider>
       <html lang="en" className={'min-h-full dark'}>
         <body className={inter.className}>
