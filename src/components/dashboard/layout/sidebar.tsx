@@ -4,6 +4,7 @@ import { Home } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { UserButton } from '@clerk/nextjs';
 
 const sidebarItems = [
   {
@@ -31,6 +32,9 @@ export function Sidebar() {
             {item.title}
           </Link>
         ))}
+      </div>
+      <div className={'w-full'}>
+          <UserButton />
       </div>
     </nav>
   );
