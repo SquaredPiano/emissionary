@@ -52,7 +52,7 @@ export default function RootLayout({
                 <div className="min-h-screen flex flex-col bg-background text-foreground">
                   {/* Top bar with user button and theme toggle */}
                   <div className="w-full flex justify-end items-center gap-4 px-6 py-4 bg-transparent z-50">
-                    <ThemeToggle />
+                    {/* <ThemeToggle /> */}
                     <UserButton afterSignOutUrl="/" />
                   </div>
                   <main className="flex-1 flex flex-col">{children}</main>
