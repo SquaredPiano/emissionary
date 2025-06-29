@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { FooterCredits } from '@/components/shared/footer-credits';
 
 export const metadata: Metadata = {
   title: 'AeroEdit - Error',
@@ -10,6 +11,7 @@ export default function ErrorPage() {
       <p className="mt-10 text-center text-xl font-bold leading-9 tracking-tight text-primary">
         Something went wrong, please try again later
       </p>
+      <FooterCredits />
     </div>
   );
 }

@@ -31,7 +31,7 @@ export function EmissionsTimeline({
   };
 
   return (
-    <Card>
+    <Card className="bg-white/90 dark:bg-zinc-900/80 border border-muted shadow-lg rounded-2xl">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
