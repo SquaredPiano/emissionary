@@ -4,6 +4,7 @@ import { LoginCardGradient } from '@/components/gradients/login-card-gradient';
 import { LoginForm } from '@/components/authentication/login-form';
 import { GhLoginButton } from '@/components/authentication/gh-login-button';
 import { SignIn } from '@clerk/nextjs';
+import { FooterCredits } from '@/components/shared/footer-credits';
 
 export default function SignInPage() {
   return (
@@ -20,6 +21,7 @@ export default function SignInPage() {
           redirectUrl="/dashboard"
         />
       </div>
+      <FooterCredits />
       {/* <div className={'flex flex-col'}>
         <div
           className={

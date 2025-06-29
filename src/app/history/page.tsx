@@ -14,7 +14,7 @@ export default async function HistoryPage() {
     <DashboardLayout>
       <div className="flex flex-col w-full max-w-7xl mx-auto px-4 pb-12">
         <DashboardPageHeader pageTitle="Receipt History" />
-        <HistoryTable />
+      <HistoryTable />
       </div>
     </DashboardLayout>
   );
