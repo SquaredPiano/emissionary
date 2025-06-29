@@ -5,8 +5,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { useTheme } from 'next-themes';
 import React from 'react';
 
-// TODO: Replace with actual data from backend API calls
-const mockCategoryData = [
+// Fallback data when no real data is available
+const getFallbackData = () => [
   { name: 'Meat & Dairy', value: 45, color: '#ef4444' }, // red-500
   { name: 'Produce', value: 20, color: '#22c55e' }, // green-500
   { name: 'Grains', value: 15, color: '#f59e0b' }, // yellow-500
@@ -15,7 +15,7 @@ const mockCategoryData = [
 ];
 
 interface CategoryBreakdownProps {
-  data?: typeof mockCategoryData;
+  emissions?: any;
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -40,7 +40,43 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export function CategoryBreakdown({ data = mockCategoryData }: CategoryBreakdownProps) {
+export function CategoryBreakdown({ emissions }: CategoryBreakdownProps) {
+  // Use real data if available, otherwise fallback to mock data
+  const data = emissions?.categoryBreakdown ? 
+    Object.entries(emissions.categoryBreakdown).map(([category, data]: [string, any]) => ({
+      name: category.charAt(0).toUpperCase() + category.slice(1),
+      value: Math.round((data.totalEmissions / emissions.totalEmissions) * 100),
+      color: getCategoryColor(category)
+    })).filter(item => item.value > 0) : 
+    getFallbackData();
+
+  // Ensure 'Unknown' category is included if present in the breakdown
+  let hasUnknown = false;
+  if (emissions?.categoryBreakdown && emissions.categoryBreakdown.unknown) {
+    const unknownData = emissions.categoryBreakdown.unknown;
+    const unknownValue = Math.round((unknownData.totalEmissions / emissions.totalEmissions) * 100);
+    if (unknownValue > 0 && !data.some(item => item.name === 'Unknown')) {
+      data.push({ name: 'Unknown', value: unknownValue, color: '#6b7280' });
+      hasUnknown = true;
+    }
+  }
+
+  function getCategoryColor(category: string): string {
+    const colors: Record<string, string> = {
+      meat: '#ef4444', // red-500
+      dairy: '#f97316', // orange-500
+      vegetables: '#22c55e', // green-500
+      fruits: '#16a34a', // green-600
+      grains: '#f59e0b', // yellow-500
+      processed: '#8b5cf6', // purple-500
+      beverages: '#0ea5e9', // sky-500
+      seafood: '#06b6d4', // cyan-500
+      nuts: '#84cc16', // lime-500
+      unknown: '#6b7280', // gray-500
+    };
+    return colors[category] || '#6b7280'; // gray-500 as default
+  }
+
   if (data.length === 0) {
     return (
       <Card className="bg-background/50 backdrop-blur-[24px] border-border">
@@ -65,6 +101,11 @@ export function CategoryBreakdown({ data = mockCategoryData }: CategoryBreakdown
         <CardDescription>Breakdown of your carbon footprint by food type</CardDescription>
       </CardHeader>
       <CardContent>
+        {hasUnknown && (
+          <div className="mb-2 p-2 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-medium">
+            Some items could not be mapped to a known category. Help us improve by reporting unknowns!
+          </div>
+        )}
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie

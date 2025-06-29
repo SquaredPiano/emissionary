@@ -3,11 +3,22 @@ import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { syncUser } from '@/lib/actions/users';
 import { logger } from '@/lib/logger';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
+import { serializePrismaResult } from '@/lib/utils/prisma-serializer';
+
+const UserSyncSchema = z.object({
+  clerkId: z.string(),
+  email: z.string().email().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
     // Get the headers
-    const headerPayload = headers();
+    const headerPayload = await headers();
     const svix_id = headerPayload.get("svix-id");
     const svix_timestamp = headerPayload.get("svix-timestamp");
     const svix_signature = headerPayload.get("svix-signature");
@@ -21,8 +32,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the body
-    const payload = await request.json();
-    const body = JSON.stringify(payload);
+    const payload = await request.text();
+    const body = JSON.parse(payload);
 
     // Create a new Svix instance with your secret.
     const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || '');
@@ -31,13 +42,13 @@ export async function POST(request: NextRequest) {
 
     // Verify the payload with the headers
     try {
-      evt = wh.verify(body, {
+      evt = wh.verify(payload, {
         "svix-id": svix_id,
         "svix-timestamp": svix_timestamp,
         "svix-signature": svix_signature,
       });
     } catch (err) {
-      logger.error('Webhook verification failed', err);
+      console.error('Error verifying webhook:', err);
       return NextResponse.json(
         { error: 'Webhook verification failed' },
         { status: 400 }
@@ -58,7 +69,7 @@ export async function POST(request: NextRequest) {
         const email = user.email_addresses?.[0]?.email_address;
         
         if (!email) {
-          logger.error('No email found for user', { userId: id });
+          logger.error('No email found for user', undefined, { userId: id });
           return NextResponse.json(
             { error: 'No email found for user' },
             { status: 400 }
@@ -74,7 +85,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!syncResult.success) {
-          logger.error('User sync failed', { userId: id, error: syncResult.error });
+          logger.error('User sync failed', new Error(syncResult.error), { userId: id });
           return NextResponse.json(
             { error: syncResult.error },
             { status: 500 }
@@ -120,7 +131,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      user: {
+      user: serializePrismaResult({
         id: user.id,
         clerkId: user.clerkId,
         email: user.email,
@@ -131,7 +142,7 @@ export async function GET() {
         location: user.location,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-      },
+      }),
     });
 
   } catch (error) {

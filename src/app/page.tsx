@@ -1,6 +1,7 @@
 import { HomePage } from '@/components/home/home-page';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { MVPTestButton } from '@/components/mvp-test-button';
 
 export default async function Home() {
   const { userId } = await auth();
@@ -10,5 +11,10 @@ export default async function Home() {
     redirect('/dashboard');
   }
 
-  return <HomePage />;
+  return (
+    <div>
+      <HomePage />
+      <MVPTestButton />
+    </div>
+  );
 }

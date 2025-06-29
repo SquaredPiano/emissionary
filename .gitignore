@@ -69,6 +69,7 @@ env.bak/
 venv.bak/
 ocr-service/venv/
 ocr-service/env/
+ocr-service/.env
 
 # Python packages
 *.whl

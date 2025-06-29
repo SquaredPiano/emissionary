@@ -1,0 +1,7 @@
+Config: --psm 8 --oem 3
+Version: thresh_127
+Char count: 1
+Word count: 1
+Number count: 0
+--------------------------------------------------
+a

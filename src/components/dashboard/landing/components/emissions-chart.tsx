@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from 'next-themes';
 
-// TODO: Replace with actual data from backend API calls
-const mockEmissionsData = [
+// Fallback data when no real data is available
+const getFallbackData = () => [
   { date: 'Mon', emissions: 2.1 },
   { date: 'Tue', emissions: 1.8 },
   { date: 'Wed', emissions: 3.2 },
@@ -16,16 +16,22 @@ const mockEmissionsData = [
 ];
 
 interface EmissionsChartProps {
-  data?: typeof mockEmissionsData;
+  emissions?: any;
   lineType?: 'monotone' | 'linear';
 }
 
-export function EmissionsChart({ data = mockEmissionsData, lineType = 'monotone' }: EmissionsChartProps) {
+export function EmissionsChart({ emissions }: EmissionsChartProps) {
   const { theme } = useTheme ? useTheme() : { theme: 'light' };
-
-  // Use CSS vars for color, fallback to black/white for dot fill
   const lineColor = theme === 'dark' ? '#10b981' : '#222';
   const dotColor = theme === 'dark' ? '#fff' : '#222';
+
+  // Use real data if available, otherwise fallback to mock data
+  const data = emissions?.monthlyData ? 
+    emissions.monthlyData.slice(-7).map((item: any) => ({
+      date: new Date(item.month).toLocaleDateString('en-US', { weekday: 'short' }),
+      emissions: item.emissions
+    })) : 
+    getFallbackData();
 
   if (data.length === 0) {
     return (
@@ -78,7 +84,7 @@ export function EmissionsChart({ data = mockEmissionsData, lineType = 'monotone'
               Dots and lines adapt to theme for visibility.
             */}
             <Line 
-              type={lineType} 
+              type='monotone' 
               dataKey="emissions" 
               stroke={lineColor}
               strokeWidth={3}

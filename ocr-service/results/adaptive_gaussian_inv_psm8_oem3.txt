@@ -1,0 +1,7 @@
+Config: --psm 8 --oem 3
+Version: adaptive_gaussian_inv
+Char count: 2
+Word count: 1
+Number count: 0
+--------------------------------------------------
+ri

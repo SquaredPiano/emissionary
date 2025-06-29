@@ -149,24 +149,52 @@ export function OCRStatus({
         {extractedData && !isProcessing && (
           <div className="space-y-4">
             <h4 className="font-medium">Extracted Items</h4>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {extractedData.items?.map((item: any, index: number) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                  <span className="text-sm">{item.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-black dark:text-gray-400">${item.price}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {item.emissions} kg CO₂e
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border rounded-lg">
+                <thead>
+                  <tr className="bg-muted/30">
+                    <th className="px-2 py-1 text-left">Name</th>
+                    <th className="px-2 py-1 text-left">Category</th>
+                    <th className="px-2 py-1 text-left">Emissions (kg CO₂e)</th>
+                    <th className="px-2 py-1 text-left">Confidence</th>
+                    <th className="px-2 py-1 text-left">Source</th>
+                    <th className="px-2 py-1 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {extractedData.items?.map((item: any, index: number) => {
+                    const isUnknown = item.category === 'unknown' || item.emissions_kg_per_kg == null;
+                    const isLowConfidence = item.confidence != null && item.confidence < 0.7;
+                    let status = 'Mapped';
+                    let statusColor = 'bg-green-100 text-green-800';
+                    if (isUnknown) {
+                      status = 'Unknown';
+                      statusColor = 'bg-yellow-100 text-yellow-800';
+                    } else if (isLowConfidence) {
+                      status = 'Low Confidence';
+                      statusColor = 'bg-orange-100 text-orange-800';
+                    }
+                    return (
+                      <tr key={index} className="border-b last:border-0">
+                        <td className="px-2 py-1 font-medium">{item.name}</td>
+                        <td className="px-2 py-1">{item.category || '—'}</td>
+                        <td className="px-2 py-1">{item.emissions_kg_per_kg != null ? item.emissions_kg_per_kg : (item.carbon_emissions != null ? item.carbon_emissions : '—')}</td>
+                        <td className="px-2 py-1">{item.confidence != null ? (item.confidence * 100).toFixed(0) + '%' : '—'}</td>
+                        <td className="px-2 py-1">{item.source || '—'}</td>
+                        <td className="px-2 py-1">
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor}`}>{status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total Emissions</span>
                 <Badge className="bg-green-600">
-                  {extractedData.totalEmissions} kg CO₂e
+                  {extractedData.totalEmissions || extractedData.total_carbon_emissions || 0} kg CO₂e
                 </Badge>
               </div>
             </div>

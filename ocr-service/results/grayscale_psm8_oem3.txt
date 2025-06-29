@@ -1,0 +1,7 @@
+Config: --psm 8 --oem 3
+Version: grayscale
+Char count: 3
+Word count: 1
+Number count: 0
+--------------------------------------------------
+arf

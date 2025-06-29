@@ -3,33 +3,41 @@ import { logger } from "@/lib/logger";
 import { 
   CreateReceiptSchema, 
   CreateReceiptItemSchema, 
-  CreateEmissionsLogSchema,
   PaginationSchema,
   ReceiptFilterSchema,
   type CreateReceipt,
   type CreateReceiptItem,
-  type CreateEmissionsLog,
   type Pagination,
   type ReceiptFilter
 } from "@/lib/schemas";
 import { z } from "zod";
 
+/**
+ * Serialize Prisma results to remove Decimal objects
+ * This ensures only plain objects are passed to client components
+ */
+function serializePrismaResult<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 export class DatabaseService {
   // User operations
   static async getUserByClerkId(clerkId: string) {
     try {
-      return await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { clerkId },
         include: {
           receipts: {
             include: {
               receiptItems: true,
-              emissionsLog: true,
             },
             orderBy: { createdAt: "desc" },
           },
         },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(user);
     } catch (error) {
       logger.error("Error fetching user by clerk ID", error instanceof Error ? error : new Error(String(error)), { clerkId });
       throw new Error("Failed to fetch user");
@@ -38,7 +46,7 @@ export class DatabaseService {
 
   static async createUser(clerkId: string, email: string, firstName?: string, lastName?: string) {
     try {
-      return await prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           clerkId,
           email,
@@ -46,6 +54,9 @@ export class DatabaseService {
           lastName,
         },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(user);
     } catch (error) {
       logger.error("Error creating user", error instanceof Error ? error : new Error(String(error)), { clerkId, email });
       throw new Error("Failed to create user");
@@ -54,10 +65,13 @@ export class DatabaseService {
 
   static async updateUser(clerkId: string, data: Partial<{ firstName: string; lastName: string; avatar: string; bio: string; location: string }>) {
     try {
-      return await prisma.user.update({
+      const user = await prisma.user.update({
         where: { clerkId },
         data,
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(user);
     } catch (error) {
       logger.error("Error updating user", error instanceof Error ? error : new Error(String(error)), { clerkId });
       throw new Error("Failed to update user");
@@ -68,11 +82,10 @@ export class DatabaseService {
   static async createReceiptWithItems(
     userId: string,
     receiptData: CreateReceipt,
-    items: CreateReceiptItem[],
-    emissionsData?: CreateEmissionsLog
+    items: CreateReceiptItem[]
   ) {
     try {
-      return await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         // Validate receipt data
         const validatedReceipt = CreateReceiptSchema.parse(receiptData);
         
@@ -105,27 +118,14 @@ export class DatabaseService {
           })
         );
 
-        // Create emissions log if provided
-        let emissionsLog = null;
-        if (emissionsData) {
-          const validatedEmissions = CreateEmissionsLogSchema.parse(emissionsData);
-          emissionsLog = await tx.emissionsLog.create({
-            data: {
-              ...validatedEmissions,
-              receiptId: receipt.id,
-              userId,
-              totalCO2: validatedEmissions.totalCO2,
-              llmEnhanced: validatedEmissions.llmEnhanced,
-            },
-          });
-        }
-
         return {
           receipt,
           items: receiptItems,
-          emissionsLog,
         };
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error creating receipt with items", error instanceof Error ? error : new Error(String(error)), { userId });
       if (error instanceof z.ZodError) {
@@ -137,13 +137,15 @@ export class DatabaseService {
 
   static async getReceiptById(receiptId: string, userId: string) {
     try {
-      return await prisma.receipt.findFirst({
+      const receipt = await prisma.receipt.findFirst({
         where: { id: receiptId, userId },
         include: {
           receiptItems: true,
-          emissionsLog: true,
         },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(receipt);
     } catch (error) {
       logger.error("Error fetching receipt", error instanceof Error ? error : new Error(String(error)), { receiptId, userId });
       throw new Error("Failed to fetch receipt");
@@ -196,7 +198,6 @@ export class DatabaseService {
           where: whereClause,
           include: {
             receiptItems: true,
-            emissionsLog: true,
           },
           orderBy: {
             [validatedPagination.sortBy || "createdAt"]: validatedPagination.sortOrder,
@@ -207,7 +208,7 @@ export class DatabaseService {
         prisma.receipt.count({ where: whereClause }),
       ]);
 
-      return {
+      const result = {
         receipts,
         pagination: {
           ...validatedPagination,
@@ -215,6 +216,9 @@ export class DatabaseService {
           totalPages: Math.ceil(total / validatedPagination.limit),
         },
       };
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error fetching receipts", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch receipts");
@@ -223,10 +227,13 @@ export class DatabaseService {
 
   static async updateReceipt(receiptId: string, userId: string, data: Partial<CreateReceipt>) {
     try {
-      return await prisma.receipt.updateMany({
+      const result = await prisma.receipt.updateMany({
         where: { id: receiptId, userId },
         data,
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error updating receipt", error instanceof Error ? error : new Error(String(error)), { receiptId, userId });
       throw new Error("Failed to update receipt");
@@ -235,67 +242,83 @@ export class DatabaseService {
 
   static async deleteReceipt(receiptId: string, userId: string) {
     try {
-      return await prisma.receipt.deleteMany({
+      const result = await prisma.receipt.deleteMany({
         where: { id: receiptId, userId },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error deleting receipt", error instanceof Error ? error : new Error(String(error)), { receiptId, userId });
-      throw new Error("Failed to delete receipt");
+      throw new Error("Failed to update receipt");
     }
   }
 
-  // Emissions operations
+  // Emissions operations - now using totalCarbonEmissions from receipts
   static async getEmissionsByUser(userId: string, startDate?: Date, endDate?: Date) {
     try {
       const whereClause: any = { userId };
       
       if (startDate || endDate) {
-        whereClause.createdAt = {};
+        whereClause.date = {};
         if (startDate) {
-          whereClause.createdAt.gte = startDate;
+          whereClause.date.gte = startDate;
         }
         if (endDate) {
-          whereClause.createdAt.lte = endDate;
+          whereClause.date.lte = endDate;
         }
       }
 
-      return await prisma.emissionsLog.findMany({
+      const receipts = await prisma.receipt.findMany({
         where: whereClause,
-        include: {
-          receipt: {
-            include: {
-              receiptItems: true,
-            },
-          },
+        select: {
+          id: true,
+          totalCarbonEmissions: true,
+          date: true,
+          merchant: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { date: "desc" },
       });
+
+      return receipts;
     } catch (error) {
-      logger.error("Error fetching emissions", error instanceof Error ? error : new Error(String(error)), { userId });
+      logger.error("Error fetching emissions by user", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch emissions");
     }
   }
 
   static async getEmissionsSummary(userId: string) {
     try {
-      const [totalEmissions, totalReceipts, averageEmissions] = await Promise.all([
-        prisma.emissionsLog.aggregate({
-          where: { userId },
-          _sum: { totalCO2: true },
-        }),
-        prisma.emissionsLog.count({
-          where: { userId },
-        }),
-        prisma.emissionsLog.aggregate({
-          where: { userId },
-          _avg: { totalCO2: true },
-        }),
-      ]);
+      const receipts = await prisma.receipt.findMany({
+        where: { userId },
+        select: {
+          totalCarbonEmissions: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const totalEmissions = receipts.reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0);
+
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+      const weeklyEmissions = receipts
+        .filter(receipt => receipt.createdAt >= weekAgo)
+        .reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0);
+
+      const monthlyEmissions = receipts
+        .filter(receipt => receipt.createdAt >= monthAgo)
+        .reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0);
 
       return {
-        totalEmissions: totalEmissions._sum.totalCO2 || 0,
-        totalReceipts,
-        averageEmissions: averageEmissions._avg.totalCO2 || 0,
+        total: totalEmissions,
+        weekly: weeklyEmissions,
+        monthly: monthlyEmissions,
+        count: receipts.length,
       };
     } catch (error) {
       logger.error("Error fetching emissions summary", error instanceof Error ? error : new Error(String(error)), { userId });
@@ -305,55 +328,42 @@ export class DatabaseService {
 
   static async getAnalytics(userId: string) {
     try {
-      const [monthlyEmissions, categoryBreakdown, recentReceipts] = await Promise.all([
-        // Monthly emissions for the last 12 months
-        prisma.$queryRaw`
-          SELECT 
-            DATE_TRUNC('month', "createdAt") as month,
-            SUM("totalCO2") as total_emissions,
-            COUNT(*) as receipt_count
-          FROM emissions_logs 
-          WHERE "userId" = ${userId}
-          AND "createdAt" >= NOW() - INTERVAL '12 months'
-          GROUP BY DATE_TRUNC('month', "createdAt")
-          ORDER BY month DESC
-        `,
-        
-        // Category breakdown
-        prisma.receiptItem.groupBy({
-          by: ['category'],
-          where: {
-            receipt: { userId },
-          },
-          _sum: {
-            carbonEmissions: true,
-          },
-          _count: true,
-        }),
-        
-        // Recent receipts with emissions
-        prisma.receipt.findMany({
-          where: { userId },
-          include: {
-            emissionsLog: true,
-            receiptItems: {
-              select: {
-                name: true,
-                carbonEmissions: true,
-                category: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        }),
-      ]);
+      const receipts = await prisma.receipt.findMany({
+        where: { userId },
+        include: {
+          receiptItems: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
-      return {
-        monthlyEmissions,
-        categoryBreakdown,
-        recentReceipts,
+      // Calculate total emissions from receipts
+      const totalEmissions = receipts.reduce((sum, receipt) => {
+        return sum + Number(receipt.totalCarbonEmissions);
+      }, 0);
+
+      // Calculate emissions by category from receipt items
+      const categoryEmissions: Record<string, number> = {};
+      receipts.forEach(receipt => {
+        receipt.receiptItems.forEach(item => {
+          const category = item.category || 'Uncategorized';
+          const emissions = Number(item.carbonEmissions);
+          categoryEmissions[category] = (categoryEmissions[category] || 0) + emissions;
+        });
+      });
+
+      // Calculate average emissions per receipt
+      const averageEmissions = receipts.length > 0 ? totalEmissions / receipts.length : 0;
+
+      const result = {
+        totalEmissions,
+        averageEmissions,
+        categoryEmissions,
+        receiptCount: receipts.length,
+        itemCount: receipts.reduce((sum, receipt) => sum + receipt.receiptItems.length, 0),
       };
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error fetching analytics", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch analytics");

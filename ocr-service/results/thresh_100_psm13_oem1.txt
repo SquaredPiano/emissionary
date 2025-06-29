@@ -1,0 +1,7 @@
+Config: --psm 13 --oem 1
+Version: thresh_100
+Char count: 2
+Word count: 1
+Number count: 0
+--------------------------------------------------
+hh

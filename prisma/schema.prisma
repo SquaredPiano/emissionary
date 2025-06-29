@@ -28,8 +28,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  receipts     Receipt[]
-  emissionsLogs EmissionsLog[]
+  receipts Receipt[]
 
   @@map("users")
 }
@@ -39,20 +38,20 @@ model Receipt {
   userId      String
   imageUrl    String?
   merchant    String
-  total       Decimal  @db.Decimal(10, 2)
+  total       Decimal
   date        DateTime
   currency    String   @default("USD")
-  taxAmount   Decimal? @db.Decimal(10, 2) @default(0)
-  tipAmount   Decimal? @db.Decimal(10, 2) @default(0)
+  taxAmount   Decimal? @default(0)
+  tipAmount   Decimal? @default(0)
   paymentMethod String?
   receiptNumber String?
+  totalCarbonEmissions Decimal @default(0) // Total carbon emissions for this receipt
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   receiptItems ReceiptItem[]
-  emissionsLog EmissionsLog?
 
   @@map("receipts")
 }
@@ -61,15 +60,15 @@ model ReceiptItem {
   id          String   @id @default(cuid())
   receiptId   String
   name        String
-  quantity    Decimal  @db.Decimal(10, 3)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  totalPrice  Decimal  @db.Decimal(10, 2)
+  quantity    Decimal
+  unitPrice   Decimal
+  totalPrice  Decimal
   category    String?
   brand       String?
   barcode     String?
   description String?
-  carbonEmissions Decimal? @db.Decimal(10, 4) // kg CO2e
-  confidence  Decimal? @db.Decimal(3, 2) // OCR confidence 0-1
+  carbonEmissions Decimal @default(0) // Carbon emissions in kg CO2e
+  confidence  Decimal @default(0.8)   // OCR confidence score
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -77,23 +76,4 @@ model ReceiptItem {
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@map("receipt_items")
-}
-
-model EmissionsLog {
-  id         String   @id @default(cuid())
-  receiptId  String   @unique
-  userId     String
-  totalCO2   Decimal  @db.Decimal(10, 4) // kg CO2e
-  breakdown  Json     // Store emission breakdown by category
-  calculationMethod String? // Method used for calculation
-  carbonIntensity   Decimal? @db.Decimal(10, 4) // Carbon intensity factor used
-  llmEnhanced Boolean @default(false) // Whether LLM was used for enhancement
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("emissions_logs")
 }

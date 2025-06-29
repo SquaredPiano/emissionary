@@ -1,0 +1,7 @@
+Config: --psm 8 --oem 1
+Version: denoised_otsu
+Char count: 2
+Word count: 1
+Number count: 0
+--------------------------------------------------
+wy

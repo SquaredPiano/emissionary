@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, TrendingDown, Leaf, Target } from 'lucide-react';
 
-// TODO: Replace with actual AI-generated tips from backend
-const mockTips = [
+// Fallback tips when no real data is available
+const getFallbackTips = () => [
   {
     id: '1',
     title: 'Switch to Plant-Based Alternatives',
@@ -41,10 +41,82 @@ const mockTips = [
 ];
 
 interface ActionableTipsProps {
-  tips?: typeof mockTips;
+  emissions?: any;
 }
 
-export function ActionableTips({ tips = mockTips }: ActionableTipsProps) {
+export function ActionableTips({ emissions }: ActionableTipsProps) {
+  // Generate personalized tips based on emissions data
+  const generatePersonalizedTips = () => {
+    if (!emissions?.categoryBreakdown) {
+      return getFallbackTips();
+    }
+
+    const tips = [];
+    const breakdown = emissions.categoryBreakdown;
+    const totalEmissions = emissions.totalEmissions;
+
+    // Tip for high meat consumption
+    if (breakdown.meat && breakdown.meat.totalEmissions > totalEmissions * 0.3) {
+      tips.push({
+        id: '1',
+        title: 'Reduce Meat Consumption',
+        description: `Meat contributes ${Math.round((breakdown.meat.totalEmissions / totalEmissions) * 100)}% to your emissions. Try meatless Mondays or plant-based alternatives.`,
+        impact: 'High',
+        savings: `${(breakdown.meat.totalEmissions * 0.3).toFixed(1)} kg CO₂e/week`,
+        category: 'diet'
+      });
+    }
+
+    // Tip for high dairy consumption
+    if (breakdown.dairy && breakdown.dairy.totalEmissions > totalEmissions * 0.2) {
+      tips.push({
+        id: '2',
+        title: 'Switch to Plant-Based Dairy',
+        description: 'Consider almond, oat, or soy milk alternatives to reduce dairy emissions.',
+        impact: 'Medium',
+        savings: `${(breakdown.dairy.totalEmissions * 0.4).toFixed(1)} kg CO₂e/week`,
+        category: 'diet'
+      });
+    }
+
+    // Tip for high processed food consumption
+    if (breakdown.processed && breakdown.processed.totalEmissions > totalEmissions * 0.25) {
+      tips.push({
+        id: '3',
+        title: 'Choose Whole Foods',
+        description: 'Reduce packaged and processed foods in favor of whole, unprocessed ingredients.',
+        impact: 'Medium',
+        savings: `${(breakdown.processed.totalEmissions * 0.2).toFixed(1)} kg CO₂e/week`,
+        category: 'diet'
+      });
+    }
+
+    // Tip for low vegetable consumption
+    if (!breakdown.vegetables || breakdown.vegetables.totalEmissions < totalEmissions * 0.1) {
+      tips.push({
+        id: '4',
+        title: 'Increase Vegetable Intake',
+        description: 'Vegetables have much lower emissions than animal products. Try adding more to your meals.',
+        impact: 'Medium',
+        savings: '1.5 kg CO₂e/week',
+        category: 'diet'
+      });
+    }
+
+    // Add general tips if we don't have enough personalized ones
+    while (tips.length < 4) {
+      const fallbackTips = getFallbackTips();
+      const tip: any = fallbackTips[tips.length];
+      if (tip && !tips.find(t => t.title === tip.title)) {
+        tips.push(tip);
+      }
+    }
+
+    return tips.slice(0, 4);
+  };
+
+  const tips = generatePersonalizedTips();
+
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case 'High': return 'text-red-600 bg-red-100';

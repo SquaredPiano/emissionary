@@ -4,9 +4,8 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, X, FileImage, CheckCircle, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, FileImage, CheckCircle, ArrowLeft, AlertCircle, Loader2, Zap } from 'lucide-react';
 import { UploadDropzone } from '@/lib/providers/uploadthing';
-import { processReceipt } from '@/lib/actions/receipts';
 import { useToast } from '@/components/ui/use-toast';
 import type { OurFileRouter } from "@/lib/uploadthing";
 
@@ -20,6 +19,12 @@ interface UploadedFile {
   size: number;
   type: string;
   key: string;
+  ocrSuccess?: boolean;
+  ocrError?: string;
+  receiptId?: string;
+  totalEmissions?: number;
+  itemsCount?: number;
+  ocrResult?: any;
 }
 
 export function FileUploader({ onFileUpload }: FileUploaderProps) {
@@ -40,13 +45,29 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
       if (file.type.startsWith('image/')) {
         setPreview(file.url);
       }
-      
-      toast({
-        title: "File uploaded successfully",
-        description: `${file.name} has been uploaded and is ready for processing.`,
-      });
+
+      // Check if OCR processing was successful
+      if (file.ocrSuccess) {
+        toast({
+          title: "Receipt processed successfully! 🎉",
+          description: `Found ${file.itemsCount || 0} items with ${(file.totalEmissions || 0).toFixed(2)} kg CO2e emissions.`,
+        });
+        
+        // Navigate to dashboard after a short delay to show the success message
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000);
+      } else {
+        // OCR failed but file uploaded successfully
+        setError(file.ocrError || 'Failed to process receipt');
+        toast({
+          title: "File uploaded but processing failed",
+          description: file.ocrError || 'Please try with a clearer image.',
+          variant: "destructive",
+        });
+      }
     }
-  }, [toast]);
+  }, [toast, router]);
 
   const handleUploadError = useCallback((error: Error) => {
     setError(error.message);
@@ -58,44 +79,6 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
     });
   }, [toast]);
 
-  const handleProcessReceipt = async () => {
-    if (!uploadedFile) return;
-
-    setIsProcessing(true);
-    setError(null);
-    
-    try {
-      const result = await processReceipt({
-        imageUrl: uploadedFile.url,
-        fileName: uploadedFile.name,
-        fileType: uploadedFile.type,
-      });
-
-      if (result.success) {
-        toast({
-          title: "Receipt processed successfully",
-          description: `Found ${result.data?.items?.length || 0} items with ${result.data?.emissionsLog?.totalCO2?.toFixed(2) || 0} kg CO2e emissions.`,
-        });
-        
-        // Navigate to dashboard to see the new receipt
-        router.push('/dashboard');
-      } else {
-        throw new Error(result.error || 'Failed to process receipt');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to process receipt';
-      setError(errorMessage);
-      
-      toast({
-        title: "Processing failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleRemove = () => {
     setUploadedFile(null);
     setPreview(null);
@@ -104,6 +87,14 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
 
   const handleBack = () => {
     router.push('/dashboard');
+  };
+
+  const handleViewResults = () => {
+    if (uploadedFile?.receiptId) {
+      router.push(`/dashboard?receipt=${uploadedFile.receiptId}`);
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   return (
@@ -125,7 +116,7 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
           </Button>
         </div>
         <CardDescription>
-          Upload a photo or PDF of your grocery receipt to calculate carbon emissions
+          Upload a photo or PDF of your grocery receipt to automatically calculate carbon emissions
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -190,24 +181,39 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
                 <span className="text-sm text-destructive">{error}</span>
               </div>
             )}
+
+            {uploadedFile.ocrSuccess && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-md">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                      Receipt processed successfully!
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      {uploadedFile.itemsCount || 0} items found • {(uploadedFile.totalEmissions || 0).toFixed(2)} kg CO2e
+                    </p>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleViewResults}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  View Results
+                </Button>
+              </div>
+            )}
             
-            <Button 
-              onClick={handleProcessReceipt} 
-              disabled={isProcessing}
-              className="w-full"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing Receipt...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Calculate Emissions
-                </>
-              )}
-            </Button>
+            {!uploadedFile.ocrSuccess && !error && (
+              <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+                <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
+                <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                  Processing receipt...
+                </span>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
