@@ -1,0 +1,19 @@
+Config: --psm 4 --oem 1
+Version: thresh_150
+Char count: 176
+Word count: 28
+Number count: 50
+--------------------------------------------------
+e
+1 of 3 $1000
+gift cards
+
+Rules and regulations apply. *
+See contest rules for details.
+
+SMILES 0065 3
+STRBVNLAL114 004850020430
+6421700742
+
+YEAST 00
+RED ONIONS  000000004082K

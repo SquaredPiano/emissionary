@@ -1,0 +1,7 @@
+Config: --psm 13 --oem 3
+Version: otsu
+Char count: 2
+Word count: 1
+Number count: 0
+--------------------------------------------------
+wy

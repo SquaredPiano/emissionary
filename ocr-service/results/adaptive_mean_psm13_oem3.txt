@@ -1,0 +1,7 @@
+Config: --psm 13 --oem 3
+Version: adaptive_mean
+Char count: 1
+Word count: 1
+Number count: 0
+--------------------------------------------------
+a

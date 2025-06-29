@@ -1,0 +1,8 @@
+Config: --psm 4 --oem 3
+Version: morph_close
+Char count: 29
+Word count: 4
+Number count: 13
+--------------------------------------------------
+>Hi Oo3ssrt cE
+(003338345485)

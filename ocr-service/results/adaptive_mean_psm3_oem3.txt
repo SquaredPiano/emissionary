@@ -1,0 +1,11 @@
+Config: --psm 3 --oem 3
+Version: adaptive_mean
+Char count: 104
+Word count: 18
+Number count: 29
+--------------------------------------------------
+: Be sy818: fae OO 2
+BOTJUHTZ RSr. Oossaneanage :
+jSPAGEH TTI. £%:007680801.1 013
+TEE 007680801:1 01;
+oe

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { OCRService } from '@/lib/services/ocr';
+import { ocrService } from '@/lib/services/ocr';
 import { OCRResponseSchema } from '@/lib/schemas';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // Request validation schema
 const OCRRequestSchema = z.object({
@@ -26,18 +27,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedBody = OCRRequestSchema.parse(body);
 
+    logger.info("OCR API request received", { 
+      userId, 
+      imageType: validatedBody.image_type,
+      imageSize: validatedBody.image.length 
+    });
+
     // Convert base64 to buffer
     const imageBuffer = Buffer.from(validatedBody.image, 'base64');
 
     // Process through OCR service
-    const ocrResult = await OCRService.processReceiptImage(
+    const ocrResult = await ocrService.processReceiptImage(
       imageBuffer,
       validatedBody.image_type,
-      validatedBody.user_id
+      { userId: validatedBody.user_id }
     );
 
     // Validate OCR response
     const validatedResult = OCRResponseSchema.parse(ocrResult);
+
+    logger.info("OCR API processing completed", { 
+      userId, 
+      success: validatedResult.success,
+      itemsCount: validatedResult.items?.length || 0,
+      totalEmissions: validatedResult.total_carbon_emissions,
+      processingTime: validatedResult.processing_time
+    });
 
     return NextResponse.json({
       success: true,
@@ -45,7 +60,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('OCR API error:', error);
+    logger.error("OCR API error", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -97,18 +112,18 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     // Health check endpoint
-    const isHealthy = await OCRService.checkHealth();
+    const isHealthy = await ocrService.checkHealth();
     
     return NextResponse.json({
       success: true,
       data: {
         status: isHealthy ? 'healthy' : 'unhealthy',
-        service: 'OCR-PaddleOCR',
+        service: 'OCR-Pytesseract',
         timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error('OCR health check error:', error);
+    logger.error("OCR health check error", error instanceof Error ? error : new Error(String(error)));
     
     return NextResponse.json(
       { 
@@ -116,7 +131,7 @@ export async function GET() {
         error: 'Health check failed',
         data: {
           status: 'unhealthy',
-          service: 'OCR-PaddleOCR',
+          service: 'OCR-Pytesseract',
           timestamp: new Date().toISOString(),
         }
       },

@@ -1,3 +1,46 @@
+# 🌱 Emissionary
+
+**Carbon emissions tracking from grocery receipts using OCR and AI**
+
+## 🚀 Quick MVP Start (No Authentication Required)
+
+Want to try the system immediately? We've created a simplified MVP version that works without authentication:
+
+### 1. Start the MVP
+```bash
+./scripts/start-mvp.sh
+```
+
+This script will:
+- Kill any processes on ports 3000 and 8000
+- Start the OCR service on port 8000
+- Start the Next.js app on port 3000
+- Install dependencies if needed
+
+### 2. Access the MVP
+- **MVP Upload Page**: http://localhost:3000/mvp-upload
+- **Home Page**: http://localhost:3000
+- **OCR Service Health**: http://localhost:8000/health
+- **Last OCR Result**: http://localhost:8000/ocr/last
+
+### 3. Test the System
+```bash
+node test-mvp.js
+```
+
+### 4. Upload a Receipt
+1. Go to http://localhost:3000/mvp-upload
+2. Upload a receipt image (PNG, JPG, JPEG)
+3. Click "Process Receipt"
+4. View the carbon emissions analysis
+
+### 5. Stop the Services
+Press `Ctrl+C` in the terminal where you ran the start script.
+
+---
+
+## 📋 Full System Overview
+
 # Emissionary - Carbon Emission Tracking App
 
 A full-stack application for tracking carbon emissions from receipts using OCR and AI.

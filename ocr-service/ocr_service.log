@@ -1,220 +1,634 @@
-INFO:     Started server process [33363]
+INFO:     Started server process [21597]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:53855 - "GET /health HTTP/1.1" 200 OK
-[2025/06/28 12:21:45] ppocr WARNING: Since the angle classifier is not initialized, the angle classifier will not be uesd during the forward process
-INFO:     127.0.0.1:53862 - "POST /ocr HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53877 - "GET /health HTTP/1.1" 200 OK
-INFO:     10.17.95.232:53881 - "GET /health HTTP/1.1" 200 OK
-INFO:     10.17.95.232:53891 - "GET /health HTTP/1.1" 200 OK
-[2025/06/28 12:24:21] ppocr WARNING: Since the angle classifier is not initialized, the angle classifier will not be uesd during the forward process
-INFO:     10.17.95.232:53923 - "POST /ocr HTTP/1.1" 200 OK
-INFO:     10.17.95.232:53931 - "GET /health HTTP/1.1" 200 OK
-INFO:     10.17.95.232:53937 - "GET /health HTTP/1.1" 200 OK
-[2025-06-28 12:25:38,024] [   ERROR] main.py:723 - File processing error: cannot identify image file <_io.BytesIO object at 0x30dabcc20>
-INFO:     10.17.95.232:53966 - "POST /ocr HTTP/1.1" 400 Bad Request
-INFO:     10.17.95.232:54015 - "GET /health HTTP/1.1" 200 OK
-[2025/06/28 12:27:33] ppocr WARNING: Since the angle classifier is not initialized, the angle classifier will not be uesd during the forward process
-INFO:     10.17.95.232:54026 - "POST /ocr HTTP/1.1" 200 OK
-[2025/06/28 12:30:21] ppocr WARNING: Since the angle classifier is not initialized, the angle classifier will not be uesd during the forward process
-INFO:     10.17.95.232:54114 - "POST /ocr HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54822 - "GET /health HTTP/1.1" 200 OK
-INFO:     10.17.95.232:54845 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54892 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54901 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54907 - "GET /health HTTP/1.1" 200 OK
-153 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 13:47:31,153 - __main__ - ERROR - ❌ opencv-python is missing
-2025-06-28 13:47:31,153 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 13:47:31,383 - __main__ - INFO - ✅ numpy is available
-2025-06-28 13:47:31,383 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 13:47:31,383 - __main__ - ERROR - ❌ python-multipart is missing
-2025-06-28 13:47:31,488 - __main__ - INFO - ✅ requests is available
-2025-06-28 13:47:31,488 - __main__ - ERROR - ❌ scikit-image is missing
-2025-06-28 13:47:31,499 - __main__ - INFO - ✅ scipy is available
-2025-06-28 13:47:33,901 - __main__ - ERROR - ❌ paddlepaddle is missing
-2025-06-28 13:47:33,901 - __main__ - ERROR - Missing packages: opencv-python, pillow, python-multipart, scikit-image, paddlepaddle
-2025-06-28 13:47:33,901 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 13:47:33,901 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:00:13,972 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:00:15,150 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:00:15,150 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:00:15,150 - __main__ - ERROR - ❌ opencv-python is missing
-2025-06-28 14:00:15,150 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:00:15,580 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:00:15,580 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:00:15,580 - __main__ - ERROR - ❌ python-multipart is missing
-2025-06-28 14:00:15,789 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:00:15,789 - __main__ - ERROR - ❌ scikit-image is missing
-2025-06-28 14:00:15,918 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:00:22,987 - matplotlib.font_manager - WARNING - Matplotlib is building the font cache; this may take a moment.
-2025-06-28 14:00:29,893 - matplotlib.font_manager - INFO - Failed to extract font properties from /System/Library/Fonts/ZitherIndiaNarrow.otf: Can not load face (SFNT font table missing; error code 0x8e)
-2025-06-28 14:00:29,935 - matplotlib.font_manager - INFO - Failed to extract font properties from /System/Library/Fonts/Apple Color Emoji.ttc: Could not set the fontsize (invalid pixel size; error code 0x17)
-2025-06-28 14:00:29,959 - matplotlib.font_manager - INFO - Failed to extract font properties from /System/Library/PrivateFrameworks/FontServices.framework/Resources/Reserved/PingFangUI.ttc: Can not load face (locations (loca) table missing; error code 0x90)
-2025-06-28 14:00:30,052 - matplotlib.font_manager - INFO - Failed to extract font properties from /System/Library/Fonts/Supplemental/NISC18030.ttf: Could not set the fontsize (invalid pixel size; error code 0x17)
-2025-06-28 14:00:30,066 - matplotlib.font_manager - INFO - Failed to extract font properties from /System/Library/Fonts/ZitherIndia.otf: Can not load face (SFNT font table missing; error code 0x8e)
-2025-06-28 14:00:30,086 - matplotlib.font_manager - INFO - Failed to extract font properties from /System/Library/Fonts/LastResort.otf: tuple indices must be integers or slices, not str
-2025-06-28 14:00:30,192 - matplotlib.font_manager - INFO - generated new fontManager
-2025-06-28 14:00:38,570 - __main__ - ERROR - ❌ paddleocr is missing
-2025-06-28 14:00:38,573 - __main__ - ERROR - ❌ paddlepaddle is missing
-2025-06-28 14:00:38,573 - __main__ - ERROR - Missing packages: opencv-python, pillow, python-multipart, scikit-image, paddleocr, paddlepaddle
-2025-06-28 14:00:38,573 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:00:38,573 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:03:20,119 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:03:20,324 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:03:20,324 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:03:20,324 - __main__ - ERROR - ❌ opencv-python is missing
-2025-06-28 14:03:20,324 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:03:20,751 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:03:20,751 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:03:20,751 - __main__ - ERROR - ❌ python-multipart is missing
-2025-06-28 14:03:20,803 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:03:20,803 - __main__ - ERROR - ❌ scikit-image is missing
-2025-06-28 14:03:20,944 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:03:32,211 - __main__ - ERROR - ❌ paddleocr is missing
-2025-06-28 14:03:32,211 - __main__ - ERROR - ❌ paddlepaddle is missing
-2025-06-28 14:03:32,211 - __main__ - ERROR - Missing packages: opencv-python, pillow, python-multipart, scikit-image, paddleocr, paddlepaddle
-2025-06-28 14:03:32,212 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:03:32,212 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:06:06,350 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:06:06,555 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:06:06,556 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:06:06,556 - __main__ - ERROR - ❌ opencv-python is missing
-2025-06-28 14:06:06,556 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:06:09,487 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:06:09,488 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:06:09,488 - __main__ - ERROR - ❌ python-multipart is missing
-2025-06-28 14:06:09,775 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:06:09,775 - __main__ - ERROR - ❌ scikit-image is missing
-2025-06-28 14:06:09,984 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:06:40,594 - __main__ - ERROR - ❌ paddlepaddle is missing
-2025-06-28 14:06:40,594 - __main__ - ERROR - Missing packages: opencv-python, pillow, python-multipart, scikit-image, paddlepaddle
-2025-06-28 14:06:40,594 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:06:40,594 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:15:51,707 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:15:52,248 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:15:52,248 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:15:52,248 - __main__ - ERROR - ❌ opencv-python is missing
-2025-06-28 14:15:52,248 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:15:54,939 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:15:54,939 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:15:54,940 - __main__ - ERROR - ❌ python-multipart is missing
-2025-06-28 14:15:55,038 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:15:55,039 - __main__ - ERROR - ❌ scikit-image is missing
-2025-06-28 14:15:55,201 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:15:55,201 - __main__ - ERROR - ❌ paddleocr is missing
-2025-06-28 14:15:55,201 - __main__ - ERROR - ❌ paddlepaddle is missing
-2025-06-28 14:15:55,201 - __main__ - ERROR - Missing packages: opencv-python, pillow, python-multipart, scikit-image, paddleocr, paddlepaddle
-2025-06-28 14:15:55,201 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:15:55,201 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:16:18,854 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:16:19,134 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:16:19,134 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:16:27,139 - __main__ - INFO - ✅ opencv-python is available
-2025-06-28 14:16:27,139 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:16:27,139 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:16:27,139 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:16:27,139 - __main__ - INFO - ✅ python-multipart is available
-2025-06-28 14:16:27,210 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:16:27,383 - __main__ - INFO - ✅ scikit-image is available
-2025-06-28 14:16:27,397 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:16:28,867 - __main__ - INFO - ✅ pytesseract is available
-2025-06-28 14:16:28,869 - __main__ - INFO - ✅ pdf2image is available
-2025-06-28 14:16:28,869 - __main__ - INFO - ✅ python-dotenv is available
-2025-06-28 14:16:28,869 - __main__ - ERROR - Missing packages: pillow
-2025-06-28 14:16:28,869 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:16:28,869 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:16:57,922 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:16:58,201 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:16:58,201 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:16:58,779 - __main__ - INFO - ✅ opencv-python is available
-2025-06-28 14:16:58,779 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:16:58,779 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:16:58,780 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:16:58,780 - __main__ - INFO - ✅ python-multipart is available
-2025-06-28 14:16:58,855 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:16:58,871 - __main__ - INFO - ✅ scikit-image is available
-2025-06-28 14:16:58,880 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:17:00,582 - __main__ - INFO - ✅ pytesseract is available
-2025-06-28 14:17:00,584 - __main__ - INFO - ✅ pdf2image is available
-2025-06-28 14:17:00,584 - __main__ - INFO - ✅ python-dotenv is available
-2025-06-28 14:17:00,584 - __main__ - ERROR - Missing packages: pillow
-2025-06-28 14:17:00,584 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:17:00,584 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:17:15,768 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:17:16,015 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:17:16,016 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:17:16,363 - __main__ - INFO - ✅ opencv-python is available
-2025-06-28 14:17:16,363 - __main__ - ERROR - ❌ pillow is missing
-2025-06-28 14:17:16,363 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:17:16,363 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:17:16,363 - __main__ - INFO - ✅ python-multipart is available
-2025-06-28 14:17:16,422 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:17:16,434 - __main__ - INFO - ✅ scikit-image is available
-2025-06-28 14:17:16,442 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:17:17,853 - __main__ - INFO - ✅ pytesseract is available
-2025-06-28 14:17:17,855 - __main__ - INFO - ✅ pdf2image is available
-2025-06-28 14:17:17,855 - __main__ - INFO - ✅ python-dotenv is available
-2025-06-28 14:17:17,855 - __main__ - ERROR - Missing packages: pillow
-2025-06-28 14:17:17,855 - __main__ - ERROR - Please install missing packages with: pip install -r requirements.txt
-2025-06-28 14:17:17,855 - __main__ - ERROR - ❌ Dependency check failed. Exiting.
-2025-06-28 14:17:45,687 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:17:45,982 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:17:45,982 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:17:46,241 - __main__ - INFO - ✅ opencv-python is available
-2025-06-28 14:17:46,241 - __main__ - INFO - ✅ pillow is available
-2025-06-28 14:17:46,241 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:17:46,241 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:17:46,242 - __main__ - INFO - ✅ python-multipart is available
-2025-06-28 14:17:46,304 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:17:46,318 - __main__ - INFO - ✅ scikit-image is available
-2025-06-28 14:17:46,329 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:17:46,668 - __main__ - INFO - ✅ pytesseract is available
-2025-06-28 14:17:46,669 - __main__ - INFO - ✅ pdf2image is available
-2025-06-28 14:17:46,669 - __main__ - INFO - ✅ python-dotenv is available
-2025-06-28 14:17:46,669 - __main__ - INFO - Checking environment configuration...
-2025-06-28 14:17:46,669 - __main__ - INFO - OCR Service will run on 0.0.0.0:8000
-2025-06-28 14:17:46,670 - __main__ - INFO - ✅ Groq API key is configured
-2025-06-28 14:18:54,960 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:18:55,267 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:18:55,267 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:18:55,575 - __main__ - INFO - ✅ opencv-python is available
-2025-06-28 14:18:55,576 - __main__ - INFO - ✅ pillow is available
-2025-06-28 14:18:55,576 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:18:55,576 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:18:55,576 - __main__ - INFO - ✅ python-multipart is available
-2025-06-28 14:18:55,634 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:18:55,646 - __main__ - INFO - ✅ scikit-image is available
-2025-06-28 14:18:55,655 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:18:55,990 - __main__ - INFO - ✅ pytesseract is available
-2025-06-28 14:18:55,992 - __main__ - INFO - ✅ pdf2image is available
-2025-06-28 14:18:55,992 - __main__ - INFO - ✅ python-dotenv is available
-2025-06-28 14:18:55,992 - __main__ - INFO - Checking environment configuration...
-2025-06-28 14:18:55,992 - __main__ - INFO - OCR Service will run on 0.0.0.0:8000
-2025-06-28 14:18:55,992 - __main__ - INFO - ✅ Groq API key is configured
-2025-06-28 14:18:56,770 - __main__ - INFO - ✅ FastAPI app imported successfully
-2025-06-28 14:18:56,770 - __main__ - INFO - 🎯 Starting server on 0.0.0.0:8000
-2025-06-28 14:18:56,770 - __main__ - INFO - 🔄 Reload mode: False
-2025-06-28 14:18:56,770 - __main__ - INFO - 👥 Workers: 1
-2025-06-28 14:19:48,612 - __main__ - INFO - 🚀 Starting Emissionary OCR Service...
-2025-06-28 14:19:48,860 - __main__ - INFO - ✅ fastapi is available
-2025-06-28 14:19:48,860 - __main__ - INFO - ✅ uvicorn is available
-2025-06-28 14:19:49,085 - __main__ - INFO - ✅ opencv-python is available
-2025-06-28 14:19:49,086 - __main__ - INFO - ✅ pillow is available
-2025-06-28 14:19:49,086 - __main__ - INFO - ✅ numpy is available
-2025-06-28 14:19:49,087 - __main__ - INFO - ✅ pydantic is available
-2025-06-28 14:19:49,087 - __main__ - INFO - ✅ python-multipart is available
-2025-06-28 14:19:49,157 - __main__ - INFO - ✅ requests is available
-2025-06-28 14:19:49,172 - __main__ - INFO - ✅ scikit-image is available
-2025-06-28 14:19:49,182 - __main__ - INFO - ✅ scipy is available
-2025-06-28 14:19:49,486 - __main__ - INFO - ✅ pytesseract is available
-2025-06-28 14:19:49,488 - __main__ - INFO - ✅ pdf2image is available
-2025-06-28 14:19:49,488 - __main__ - INFO - ✅ python-dotenv is available
-2025-06-28 14:19:49,488 - __main__ - INFO - Checking environment configuration...
-2025-06-28 14:19:49,488 - __main__ - INFO - OCR Service will run on 0.0.0.0:8000
-2025-06-28 14:19:49,488 - __main__ - INFO - ✅ Groq API key is configured
-2025-06-28 14:19:50,214 - __main__ - INFO - ✅ FastAPI app imported successfully
-2025-06-28 14:19:50,214 - __main__ - INFO - 🎯 Starting server on 0.0.0.0:8000
-2025-06-28 14:19:50,214 - __main__ - INFO - 🔄 Reload mode: False
-2025-06-28 14:19:50,214 - __main__ - INFO - 👥 Workers: 1
+INFO:app:Processing image of shape: (78146,)
+INFO:app:Main perform_ocr: Decoding 1D array of shape (78146,)
+INFO:app:Main perform_ocr: Image shape after decoding: (1024, 683, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (1024, 683, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 1202 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 1202 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 624 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 624 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 722 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 722 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 979 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 979 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 874 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 874 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 812 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 812 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 770 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 770 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 830 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 830 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 831 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 831 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 780 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 780 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 875 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 875 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 838 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 838 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 859 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 859 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 812 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 812 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 771 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 771 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 831 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 831 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 1202 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 1202 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 624 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 624 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 722 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 722 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 979 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 979 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 868 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 868 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 801 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 801 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.01
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.01
+INFO:app:PSM 11, OEM 3: 825 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 825 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 869 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 869 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 745 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 745 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 698 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 698 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 816 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 816 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 1202 characters
+INFO:app:Text preview: p— = mor\nWITIO SMIT GATIMLE\n. Fi CIT a C\n2TUISIAR §\nwalraarks!\nj Save mon eyokis Pettersrs |\n——— Se BBO TWOHTOKORS NO 7 > :\nHER eam OUTER GOT\nj Sta. 2083 “OPH OO007 355 TER: O51TRH- O86 ae\nGOW SPC SEY
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:55744 - "POST /ocr HTTP/1.1" 200 OK
+INFO:app:Processing image of shape: (296356,)
+INFO:app:Main perform_ocr: Decoding 1D array of shape (296356,)
+INFO:app:Main perform_ocr: Image shape after decoding: (2180, 1636, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (2180, 1636, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 504 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 504 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 407 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 407 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 730 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 730 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 701 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 701 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 530 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 530 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 572 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 572 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 672 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 672 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 790 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 790 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 717 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 717 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 737 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 737 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 508 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 508 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 409 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 409 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 721 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 721 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 736 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 736 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 675 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 675 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 695 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 695 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 732 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 732 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 899 characters
+INFO:app:Text preview: WisHorticustomercuct [of feos\nsOnvelakeceed ne : lensurvay. at. He, 4 aw sh\nLe pie. ee AN Agen WEY WALMARTCA ea Pee\na on ke iyep ows dhe cae |: Past as Tas i Be ca Ness\nee Aeeots Ee pda a i@) ses rt P
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:55751 - "POST /ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56342 - "GET /health HTTP/1.1" 200 OK
+INFO:app:Processing image of shape: (296356,)
+INFO:app:Main perform_ocr: Decoding 1D array of shape (296356,)
+INFO:app:Main perform_ocr: Image shape after decoding: (2180, 1636, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (2180, 1636, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 504 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 504 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 407 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 407 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 730 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 730 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 701 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 701 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 530 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 530 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 572 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 572 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 672 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 672 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 790 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 790 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 717 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 717 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 737 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 737 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 508 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 508 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 409 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 409 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 721 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 721 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 736 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 736 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 675 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 675 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 695 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 695 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 732 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 732 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 899 characters
+INFO:app:Text preview: WisHorticustomercuct [of feos\nsOnvelakeceed ne : lensurvay. at. He, 4 aw sh\nLe pie. ee AN Agen WEY WALMARTCA ea Pee\na on ke iyep ows dhe cae |: Past as Tas i Be ca Ness\nee Aeeots Ee pda a i@) ses rt P
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:56343 - "POST /ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56351 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56353 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56401 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56426 - "GET /health HTTP/1.1" 200 OK
+INFO:app:Processing image of shape: (78146,)
+INFO:app:Main perform_ocr: Decoding 1D array of shape (78146,)
+INFO:app:Main perform_ocr: Image shape after decoding: (1024, 683, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (1024, 683, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 1202 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 1202 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 624 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 624 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 722 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 722 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 979 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 979 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 874 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 874 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 812 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 812 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 770 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 770 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 830 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 830 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 831 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 831 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 780 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 780 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 875 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 875 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 838 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 838 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 859 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 859 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 812 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 812 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 771 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 771 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 831 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 831 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 1202 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 1202 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 624 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 624 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 722 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 722 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 979 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 979 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 868 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 868 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 801 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 801 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.01
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.01
+INFO:app:PSM 11, OEM 3: 825 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 825 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 869 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 869 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 745 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 745 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 698 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 698 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 816 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 816 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 1202 characters
+INFO:app:Text preview: p— = mor\nWITIO SMIT GATIMLE\n. Fi CIT a C\n2TUISIAR §\nwalraarks!\nj Save mon eyokis Pettersrs |\n——— Se BBO TWOHTOKORS NO 7 > :\nHER eam OUTER GOT\nj Sta. 2083 “OPH OO007 355 TER: O51TRH- O86 ae\nGOW SPC SEY
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:56427 - "POST /ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56443 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56445 - "GET /health HTTP/1.1" 200 OK
+INFO:app:Processing image of shape: (78146,)
+INFO:app:Main perform_ocr: Decoding 1D array of shape (78146,)
+INFO:app:Main perform_ocr: Image shape after decoding: (1024, 683, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (1024, 683, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 1202 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 1202 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 624 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 624 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 722 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 722 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 979 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 979 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 874 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 874 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 812 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 812 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 770 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 770 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 830 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 830 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 831 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 831 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 780 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 780 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 875 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 875 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 838 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 838 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 859 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 859 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 812 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 812 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 771 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 771 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 831 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 831 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 1202 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 1202 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 624 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 624 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 722 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 722 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 979 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 979 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 868 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 868 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 801 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 801 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 2 chars, confidence: 0.01
+INFO:app:PSM 8, OEM 1: 2 chars, confidence: 0.01
+INFO:app:PSM 11, OEM 3: 825 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 825 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 869 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 869 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 745 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 745 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 698 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 698 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 816 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 816 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 1202 characters
+INFO:app:Text preview: p— = mor\nWITIO SMIT GATIMLE\n. Fi CIT a C\n2TUISIAR §\nwalraarks!\nj Save mon eyokis Pettersrs |\n——— Se BBO TWOHTOKORS NO 7 > :\nHER eam OUTER GOT\nj Sta. 2083 “OPH OO007 355 TER: O51TRH- O86 ae\nGOW SPC SEY
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:56446 - "POST /ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /health HTTP/1.1" 200 OK
+INFO:app:Processing uploaded file: receipt.png
+INFO:app:Main perform_ocr: Decoding 1D array of shape (296356,)
+INFO:app:Main perform_ocr: Image shape after decoding: (2180, 1636, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (2180, 1636, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 504 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 504 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 407 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 407 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 730 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 730 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 701 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 701 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 530 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 530 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 572 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 572 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 672 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 672 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 790 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 790 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 717 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 717 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 737 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 737 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 508 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 508 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 409 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 409 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 721 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 721 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 736 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 736 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 675 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 675 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 695 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 695 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 732 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 732 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 899 characters
+INFO:app:Text preview: WisHorticustomercuct [of feos\nsOnvelakeceed ne : lensurvay. at. He, 4 aw sh\nLe pie. ee AN Agen WEY WALMARTCA ea Pee\na on ke iyep ows dhe cae |: Past as Tas i Be ca Ness\nee Aeeots Ee pda a i@) ses rt P
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:56463 - "POST /ocr/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56479 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56525 - "GET /health HTTP/1.1" 200 OK
+INFO:app:Processing uploaded file: receipt.png
+INFO:app:Main perform_ocr: Decoding 1D array of shape (296356,)
+INFO:app:Main perform_ocr: Image shape after decoding: (2180, 1636, 3)
+INFO:app:Starting robust OCR processing
+INFO:app:Image shape after decoding: (2180, 1636, 3)
+INFO:app:Trying preprocessing method: adaptive_thresh
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: otsu_thresh
+INFO:app:PSM 6, OEM 3: 744 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 744 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 504 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 504 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 407 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 407 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 730 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 730 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: enhanced_thresh
+INFO:app:PSM 6, OEM 3: 701 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 701 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 530 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 530 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 572 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 572 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 672 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 672 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: denoised_thresh
+INFO:app:PSM 6, OEM 3: 790 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 790 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 499 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 499 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 717 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 717 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: morphological
+INFO:app:PSM 6, OEM 3: 899 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 899 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 4, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 3: 31 chars, confidence: 0.49
+INFO:app:PSM 3, OEM 1: 31 chars, confidence: 0.49
+INFO:app:PSM 8, OEM 3: 3 chars, confidence: 0.02
+INFO:app:PSM 8, OEM 1: 3 chars, confidence: 0.02
+INFO:app:PSM 11, OEM 3: 741 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 741 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: grayscale
+INFO:app:PSM 6, OEM 3: 737 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 737 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 508 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 508 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 409 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 409 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 721 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 721 chars, confidence: 1.00
+INFO:app:Trying preprocessing method: rgb
+INFO:app:PSM 6, OEM 3: 736 chars, confidence: 1.00
+INFO:app:PSM 6, OEM 1: 736 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 3: 675 chars, confidence: 1.00
+INFO:app:PSM 4, OEM 1: 675 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 3: 695 chars, confidence: 1.00
+INFO:app:PSM 3, OEM 1: 695 chars, confidence: 1.00
+INFO:app:PSM 8, OEM 3: 4 chars, confidence: 0.03
+INFO:app:PSM 8, OEM 1: 4 chars, confidence: 0.03
+INFO:app:PSM 11, OEM 3: 732 chars, confidence: 1.00
+INFO:app:PSM 11, OEM 1: 732 chars, confidence: 1.00
+INFO:app:Best result: adaptive_thresh_psm6_oem3 with confidence 1.00
+INFO:app:OCR completed. Method: adaptive_thresh_psm6_oem3, Confidence: 1.00
+INFO:app:Extracted text length: 899 characters
+INFO:app:Text preview: WisHorticustomercuct [of feos\nsOnvelakeceed ne : lensurvay. at. He, 4 aw sh\nLe pie. ee AN Agen WEY WALMARTCA ea Pee\na on ke iyep ows dhe cae |: Past as Tas i Be ca Ness\nee Aeeots Ee pda a i@) ses rt P
+INFO:app:Parsing completed. Items found: 0
+INFO:     127.0.0.1:56528 - "POST /ocr/ HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21597]

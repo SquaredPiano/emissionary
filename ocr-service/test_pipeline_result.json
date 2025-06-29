@@ -1,0 +1,110 @@
+{
+  "id": "test_receipt_001",
+  "user_id": "test_user",
+  "merchant": "Walmart",
+  "total_amount": 61.91,
+  "total_carbon_emissions": 27.799999999999997,
+  "items_count": 10,
+  "ocr_text": "Complete our short customer survey at\nSURVEY.WALMART.CA\nWIN!\n1 of 3 $1000\ngift cards\nRules and regulations apply.\nSee contest rules for details.\nSTORE 3156\n335 FARMERS MARKET ROAD, UNIT 101\nWATERLOO, ON\nN2V 0A4\n519-746-6700\nST# 03156 OP# 003371 TE# 14 TR# 02590\nPOT WHT/ RST 003338345485 $5.97 D\nSPAGEHTTI 007680801101 $2.47 D\nSPAGEHTTI 007680801101 $2.47 D CARROTS 062891540919 $3.47 D\nDRUMSTICK KK 005500038382 $4.87 J\nCHIPITS MK 005660090294 $10.97 D\nBD MED 400G 006820088547 $4.44 D\nBD OLD 400G 006820088551 $4.44 D\nSMILES 005577300073 $2.47 D\nYEAST 006421700742 $4.97 D\nRED ONIONS 000000004082K \n  0.290 kg @ $4.34/kg  $1.26 D\nOTV TOMATO 000000004664K\n  0.225 kg @ $5.45/kg. $1.23 D\nCHARGE PYMT D68 QTY 1 $4.06 H\nSQUASH ZUCC 000000004067K\n  0.200 kg @ $4.34/kg $0.87 D\nONION SCAL 000000004068K $0.97 D\nSUBTOTAL $61.91\nHST 13.0000% $0.63\nTOTAL $62.54\nVISA TEND $62.54",
+  "parsed_data": {
+    "items": [
+      {
+        "name": "SPAGEHTTI",
+        "quantity": 1.0,
+        "unit_price": 2.47,
+        "total_price": 2.47,
+        "carbon_emissions": 1.0,
+        "category": "grains",
+        "confidence": 1.0
+      },
+      {
+        "name": "SPAGEHTTI $2.47 D CARROTS",
+        "quantity": 1.0,
+        "unit_price": 3.47,
+        "total_price": 3.47,
+        "carbon_emissions": 0.4,
+        "category": "vegetables",
+        "confidence": 1.0
+      },
+      {
+        "name": "DRUMSTICK KK",
+        "quantity": 1.0,
+        "unit_price": 4.87,
+        "total_price": 4.87,
+        "carbon_emissions": 15.0,
+        "category": "meat",
+        "confidence": 1.0
+      },
+      {
+        "name": "CHIPITS MK",
+        "quantity": 1.0,
+        "unit_price": 10.97,
+        "total_price": 10.97,
+        "carbon_emissions": 2.0,
+        "category": "processed",
+        "confidence": 1.0
+      },
+      {
+        "name": "SMILES",
+        "quantity": 1.0,
+        "unit_price": 2.47,
+        "total_price": 2.47,
+        "carbon_emissions": 2.0,
+        "category": "sweets",
+        "confidence": 1.0
+      },
+      {
+        "name": "YEAST",
+        "quantity": 1.0,
+        "unit_price": 4.97,
+        "total_price": 4.97,
+        "carbon_emissions": 1.0,
+        "category": "grains",
+        "confidence": 1.0
+      },
+      {
+        "name": "0.290 kg @ $4.34/kg",
+        "quantity": 1.0,
+        "unit_price": 1.26,
+        "total_price": 1.26,
+        "carbon_emissions": 2.0,
+        "category": "processed",
+        "confidence": 1.0
+      },
+      {
+        "name": "0.225 kg @ $5.45/kg.",
+        "quantity": 1.0,
+        "unit_price": 1.23,
+        "total_price": 1.23,
+        "carbon_emissions": 2.0,
+        "category": "processed",
+        "confidence": 1.0
+      },
+      {
+        "name": "0.200 kg @ $4.34/kg",
+        "quantity": 1.0,
+        "unit_price": 0.87,
+        "total_price": 0.87,
+        "carbon_emissions": 2.0,
+        "category": "processed",
+        "confidence": 1.0
+      },
+      {
+        "name": "ONION SCAL",
+        "quantity": 1.0,
+        "unit_price": 0.97,
+        "total_price": 0.97,
+        "carbon_emissions": 0.4,
+        "category": "vegetables",
+        "confidence": 1.0
+      }
+    ],
+    "merchant": "Walmart",
+    "total": 61.91,
+    "date": null,
+    "total_carbon_emissions": 27.799999999999997,
+    "llm_enhanced": false
+  },
+  "processing_status": "completed",
+  "created_at": "2025-06-29T01:00:00Z"
+}
