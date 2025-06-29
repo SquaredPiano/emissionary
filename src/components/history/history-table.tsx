@@ -9,96 +9,147 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, Download, Trash2, Search, Filter, EyeOff, Undo2 } from 'lucide-react';
 import { ReceiptStatus } from '@/lib/database.types';
+import useSWR from 'swr';
+import { getUserReceipts, deleteReceipt, updateReceiptStatus } from '@/lib/actions/receipts';
+import { toast } from 'sonner';
 
-const merchants = ['Walmart', 'Sobeys', 'Loblaws', 'No Frills', 'Metro'];
-const mockHistoryData = Array.from({ length: 50 }, (_, i) => {
-  const merchant = merchants[i % merchants.length];
-  return {
-    id: (i + 1).toString(),
-    merchant,
-    date: `2024-01-${(15 - (i % 5)).toString().padStart(2, '0')}`,
-    total: Math.round(Math.random() * 10000 + 2000) / 100,
-    emissions: Math.round((Math.random() * 200 + 50)) / 10,
-    items: Math.floor(Math.random() * 20 + 5),
-    status: ReceiptStatus.PROCESSED,
-    imageUrl: '/placeholder.jpg',
-  };
-});
+// Define the Receipt type based on the database schema
+interface Receipt {
+  id: string;
+  userId: string;
+  imageUrl?: string | null;
+  merchant: string;
+  total: number | string;
+  date: string;
+  currency: string;
+  taxAmount?: number | string | null;
+  tipAmount?: number | string | null;
+  paymentMethod?: string | null;
+  receiptNumber?: string | null;
+  totalCarbonEmissions: number | string;
+  status: string; // Now this is a real database field
+  createdAt: string;
+  updatedAt: string;
+  receiptItems?: ReceiptItem[];
+}
+
+interface ReceiptItem {
+  id: string;
+  receiptId: string;
+  name: string;
+  quantity: number | string;
+  unitPrice: number | string;
+  totalPrice: number | string;
+  category?: string | null;
+  brand?: string | null;
+  barcode?: string | null;
+  description?: string | null;
+  carbonEmissions: number | string;
+  confidence: number | string;
+  createdAt: string;
+  updatedAt: string;
+  source?: string;
+}
+
+// Helper function to safely convert string/number to number
+const toNumber = (value: number | string | null | undefined): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// Helper function to safely format emissions
+const formatEmissions = (value: number | string | null | undefined): string => {
+  const num = toNumber(value);
+  return num.toFixed(1);
+};
 
 export function HistoryTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
-  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
-  const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [showDeleted, setShowDeleted] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Add hidden and deleted status to data
-  const dataWithStatus = mockHistoryData.map(item => {
-    if (deletedIds.includes(item.id)) {
-      return { ...item, status: 'deleted', prevStatus: item.status };
-    }
-    if (hiddenIds.includes(item.id)) {
-      return { ...item, status: ReceiptStatus.HIDDEN, prevStatus: item.status };
-    }
-    return item;
+  // Fetch real receipts for the user
+  const { data: receiptsData, mutate } = useSWR('user-receipts', async () => {
+    const res = await getUserReceipts({ page: 1, limit: 100 });
+    return res.data?.receipts || [];
   });
+  const receipts = receiptsData || [];
 
-  const filteredData = dataWithStatus
-    .filter(item => {
+  // Filter data based on search and status
+  const filteredData = receipts
+    .filter((item: Receipt) => {
       if (showDeleted) return item.status === 'deleted';
       return (
         item.status !== 'deleted' &&
-      item.merchant.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (statusFilter === 'all' || item.status === statusFilter)
+        item.merchant.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (statusFilter === 'all' || item.status === statusFilter)
       );
     })
-    .sort((a, b) => {
+    .sort((a: Receipt, b: Receipt) => {
       switch (sortBy) {
         case 'date':
           return new Date(b.date).getTime() - new Date(a.date).getTime();
         case 'emissions':
-          return b.emissions - a.emissions;
+          return toNumber(b.totalCarbonEmissions) - toNumber(a.totalCarbonEmissions);
         case 'total':
-          return b.total - a.total;
+          return toNumber(b.total) - toNumber(a.total);
         default:
           return 0;
       }
     });
 
-  const totalEmissions = filteredData.reduce((sum, item) => sum + item.emissions, 0);
+  const totalEmissions = filteredData.reduce(
+    (sum: number, item: Receipt) => 
+      sum + toNumber(item.totalCarbonEmissions),
+    0
+  );
   const averageEmissions = filteredData.length > 0 ? totalEmissions / filteredData.length : 0;
 
-  const handleToggleHide = (id: string) => {
-    setHiddenIds((prev) =>
-      prev.includes(id) ? prev.filter((hid) => hid !== id) : [...prev, id]
-    );
-  };
-
-  const handleSoftDelete = (id: string) => {
-    setDeletedIds((prev) => [...prev, id]);
-  };
-
-  const handleRestore = (id: string) => {
-    setDeletedIds((prev) => prev.filter((did) => did !== id));
-  };
-
-  const handlePermanentDelete = (id: string) => {
-    setDeletedIds((prev) => prev.filter((did) => did !== id));
-    // Optionally, also remove from mockHistoryData if you want true deletion
-  };
-
-  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
-    if (e.shiftKey || showDeleted) {
-      setConfirmDeleteId(id);
-    } else {
-      handleSoftDelete(id);
+  const handleToggleHide = async (id: string, currentStatus: string) => {
+    setIsLoading(true);
+    try {
+      const newStatus = currentStatus === ReceiptStatus.HIDDEN ? ReceiptStatus.PROCESSED : ReceiptStatus.HIDDEN;
+      const result = await updateReceiptStatus({ receiptId: id, status: newStatus });
+      
+      if (result.success) {
+        toast.success(`Receipt ${newStatus === ReceiptStatus.HIDDEN ? 'hidden' : 'unhidden'} successfully`);
+        mutate(); // Refresh the data
+      } else {
+        toast.error(result.error || 'Failed to update receipt status');
+      }
+    } catch (error) {
+      toast.error('An error occurred while updating receipt status');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDownload = (item: any) => {
+  const handleDelete = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const result = await deleteReceipt({ receiptId: id });
+      
+      if (result.success) {
+        toast.success('Receipt deleted successfully');
+        mutate(); // Refresh the data
+        setConfirmDeleteId(null);
+      } else {
+        toast.error(result.error || 'Failed to delete receipt');
+      }
+    } catch (error) {
+      toast.error('An error occurred while deleting receipt');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = (item: Receipt) => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(item, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -138,20 +189,6 @@ export function HistoryTable() {
             </span>
           )}
         </div>
-        {showDeleted && (
-          <div className="flex justify-end items-center mt-2 mb-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              className="px-3 py-1 text-xs"
-              onClick={() => setConfirmDeleteAll(true)}
-              disabled={filteredData.length === 0}
-              style={filteredData.length === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-            >
-              Permanently Delete All
-            </Button>
-          </div>
-        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Stats */}
@@ -222,26 +259,26 @@ export function HistoryTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => (
-                <TableRow key={item.id} className={item.status === ReceiptStatus.HIDDEN ? 'opacity-50 bg-zinc-900/60 dark:bg-zinc-800/60' : item.status === 'deleted' ? 'opacity-60 bg-red-900/30 dark:bg-red-800/30' : ''}>
+              {filteredData.map((item: Receipt) => (
+                <TableRow key={item.id} className={item.status === ReceiptStatus.HIDDEN ? 'opacity-50 bg-zinc-900/60 dark:bg-zinc-800/60' : ''}>
                   <TableCell className="font-medium">{item.merchant}</TableCell>
                   <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
-                  <TableCell>${item.total.toFixed(2)}</TableCell>
-                  <TableCell>{item.items}</TableCell>
+                  <TableCell>${toNumber(item.total).toFixed(2)}</TableCell>
+                  <TableCell>{item.receiptItems?.length || 0}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      {item.emissions.toFixed(1)} kg CO₂e
+                      {formatEmissions(item.totalCarbonEmissions)} kg CO₂e
                     </Badge>
                     {'receiptItems' in item && Array.isArray(item.receiptItems) && 
-                     item.receiptItems.some((receiptItem: any) => receiptItem.source) && (
+                     item.receiptItems.some((receiptItem: ReceiptItem) => receiptItem.source) && (
                       <div className="text-xs text-muted-foreground mt-1">
                         {(() => {
-                          const sourceCounts = item.receiptItems.reduce((acc: any, receiptItem: any) => {
+                          const sourceCounts = item.receiptItems!.reduce((acc: Record<string, number>, receiptItem: ReceiptItem) => {
                             const source = receiptItem.source || 'unknown';
                             acc[source] = (acc[source] || 0) + 1;
                             return acc;
                           }, {});
-                          return Object.entries(sourceCounts).map(([source, count]: [string, any]) => (
+                          return Object.entries(sourceCounts).map(([source, count]: [string, number]) => (
                             <span key={source} className="mr-1">
                               {source}: {count}
                             </span>
@@ -260,32 +297,35 @@ export function HistoryTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
-                      {item.status !== 'deleted' ? (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={() => handleToggleHide(item.id)}>
-                            {item.status === ReceiptStatus.HIDDEN ? (
-                              <EyeOff className="h-4 w-4 text-zinc-400" />
-                            ) : (
-                        <Eye className="h-4 w-4" />
-                            )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleToggleHide(item.id, item.status)}
+                        disabled={isLoading}
+                      >
+                        {item.status === ReceiptStatus.HIDDEN ? (
+                          <EyeOff className="h-4 w-4 text-zinc-400" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDownload(item)}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDownload(item)}
+                        disabled={isLoading}
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => handleDeleteClick(item.id, e)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id)}>
-                            <Undo2 className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setConfirmDeleteId(item.id)}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700" 
+                        onClick={() => setConfirmDeleteId(item.id)}
+                        disabled={isLoading}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                        </>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -298,30 +338,21 @@ export function HistoryTable() {
         {confirmDeleteId && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
             <div className="bg-background p-6 rounded-lg shadow-lg flex flex-col items-center">
-              <div className="mb-4 text-lg font-semibold">Are you sure you want to permanently delete this entry?</div>
-              <div className="flex gap-4">
-                <Button variant="destructive" onClick={() => { handlePermanentDelete(confirmDeleteId); setConfirmDeleteId(null); }}>
-                  Yes, delete
-                </Button>
-                <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete All Confirmation Modal */}
-        {confirmDeleteAll && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
-            <div className="bg-background p-6 rounded-lg shadow-lg flex flex-col items-center">
-              <div className="mb-4 text-lg font-semibold text-red-600">Are you sure you want to permanently delete ALL deleted items?</div>
+              <div className="mb-4 text-lg font-semibold">Are you sure you want to delete this receipt?</div>
               <div className="mb-2 text-sm text-muted-foreground">This action <b>cannot</b> be undone.</div>
               <div className="flex gap-4">
-                <Button variant="destructive" onClick={() => { setDeletedIds([]); setConfirmDeleteAll(false); }}>
-                  Yes, delete all
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDelete(confirmDeleteId)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Deleting...' : 'Yes, delete'}
                 </Button>
-                <Button variant="outline" onClick={() => setConfirmDeleteAll(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setConfirmDeleteId(null)}
+                  disabled={isLoading}
+                >
                   Cancel
                 </Button>
               </div>

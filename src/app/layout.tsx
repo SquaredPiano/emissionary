@@ -3,7 +3,7 @@ import '../styles/globals.css'
 import '../styles/layout.css';
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sonner';
 import {
   ClerkProvider,
   SignInButton,
@@ -46,7 +46,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className='dark' suppressHydrationWarning>
-        <body className={inter.className}>
+        <body className={inter.className} suppressHydrationWarning>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <UserSyncProvider>
               <UploadThingProvider>
@@ -58,7 +58,7 @@ export default function RootLayout({
               </UploadThingProvider>
             </UserSyncProvider>
           </ThemeProvider>
-          <Toaster />
+          <Toaster richColors position="top-right" />
         </body>
       </html>
     </ClerkProvider>
