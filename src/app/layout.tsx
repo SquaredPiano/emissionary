@@ -17,6 +17,7 @@ import { ThemeProvider } from 'next-themes';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { UserSyncProvider } from '@/components/providers/user-sync-provider';
 import { UploadThingProvider } from '@/lib/providers/uploadthing';
+import { TopBar } from '@/components/ui/top-bar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -44,19 +45,16 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className='dark flex items-center justify-center' suppressHydrationWarning>
+      <html lang="en" className='dark' suppressHydrationWarning>
         <body className={inter.className}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <UserSyncProvider>
               <UploadThingProvider>
-                <div className="min-h-screen flex flex-col bg-background text-foreground">
-                  {/* Top bar with user button and theme toggle */}
-                  <div className="w-full flex justify-end items-center gap-4 px-6 py-4 bg-transparent z-50">
-                    {/* <ThemeToggle /> */}
-                    <UserButton afterSignOutUrl="/" />
-                  </div>
-                  <main className="flex-1 flex flex-col">{children}</main>
-                </div>
+                <div className="min-h-screen bg-background text-foreground">
+              {/* Top bar with user button and theme toggle */}
+                  <TopBar />
+                  <main className="flex-1">{children}</main>
+              </div>
               </UploadThingProvider>
             </UserSyncProvider>
           </ThemeProvider>

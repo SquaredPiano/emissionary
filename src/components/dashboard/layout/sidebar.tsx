@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Upload, History, Settings, Leaf } from 'lucide-react';
+import { Home, Upload, History, Settings, Leaf, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,11 @@ const sidebarItems = [
     title: 'History',
     icon: <History className="h-5 w-5" />,
     href: '/history' as const,
+  },
+  {
+    title: 'Analytics',
+    icon: <BarChart3 className="h-5 w-5" />,
+    href: '/charts' as const,
   },
 ];
 
