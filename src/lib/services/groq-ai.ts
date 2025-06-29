@@ -974,7 +974,7 @@ Return only the number, no explanation or units.`;
       }
       
       // Try to extract items from text format
-      const lines = rawContent.split('\n').filter(line => line.trim().length > 0);
+      const lines = rawContent.split('\n').filter((line: string) => line.trim().length > 0);
       const items: any[] = [];
       
       for (const line of lines) {
