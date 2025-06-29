@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Upload, History, Settings, Leaf, BarChart3 } from 'lucide-react';
+import { Home, Upload, History, Settings, Leaf, BarChart3, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,11 @@ const sidebarItems = [
     title: 'Upload Receipt',
     icon: <Upload className="h-5 w-5" />,
     href: '/upload' as const,
+  },
+  {
+    title: 'Competition',
+    icon: <Trophy className="h-5 w-5" />,
+    href: '/competition' as const,
   },
   {
     title: 'History',

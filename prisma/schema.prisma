@@ -27,8 +27,22 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Competition & Achievements fields
+  level               Int     @default(1)
+  experience          Int     @default(0)
+  totalPoints         Int     @default(0)
+  currentStreak       Int     @default(0)
+  longestStreak       Int     @default(0)
+  lastUploadDate      DateTime?
+  totalReceipts       Int     @default(0)
+  totalEmissions      Decimal @default(0)
+  greenChoices        Int     @default(0) // Count of low-emission choices
+  weeklyGreenWeeks    Int     @default(0) // Count of weeks with emissions below 50kg
+
   // Relations
   receipts Receipt[]
+  userAchievements UserAchievement[]
+  streaks Streak[]
 
   @@map("users")
 }
@@ -76,4 +90,87 @@ model ReceiptItem {
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@map("receipt_items")
+}
+
+// Competition & Achievements Models
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String   // Emoji or icon identifier
+  rarity      BadgeRarity
+  points      Int      @default(10)
+  requirement BadgeRequirement
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("badges")
+}
+
+model UserAchievement {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  progress  Int      @default(0) // Current progress towards the badge
+  isCompleted Boolean @default(false)
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_achievements")
+}
+
+model Streak {
+  id        String   @id @default(cuid())
+  userId    String
+  type      StreakType
+  current   Int      @default(0)
+  longest   Int      @default(0)
+  lastDate  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("streaks")
+}
+
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum BadgeRequirement {
+  FIRST_UPLOAD
+  UPLOAD_STREAK_3
+  UPLOAD_STREAK_7
+  UPLOAD_STREAK_30
+  TOTAL_RECEIPTS_10
+  TOTAL_RECEIPTS_50
+  TOTAL_RECEIPTS_100
+  LOW_EMISSIONS_WEEK
+  GREEN_WEEKS_5
+  GREEN_WEEKS_10
+  TOTAL_EMISSIONS_1000
+  GREEN_CHOICES_10
+  GREEN_CHOICES_50
+  PERFECT_WEEK
+  EARLY_ADOPTER
+}
+
+enum StreakType {
+  UPLOAD
+  GREEN_CHOICES
+  LOW_EMISSIONS
 }
