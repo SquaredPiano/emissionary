@@ -99,13 +99,12 @@ export function SimpleUpload({
     try {
       const result = await processReceiptImage({
         imageUrl: uploadedFile.url,
-        fileName: uploadedFile.name,
         imageType: uploadedFile.type,
       });
       if (result.success) {
         toast({
           title: "Receipt processed successfully",
-          description: `Found ${result.data?.items?.length || 0} items with ${result.data?.emissionsPerReceipt?.totalCO2?.toFixed(2) || 0} kg CO2e emissions.`,
+          description: `Found ${result.data?.items?.length || 0} items with ${result.data?.emissionsPerReceipt?.totalCO2?.toFixed(2) || result.data?.totalEmissions?.toFixed(2) || 0} kg CO2e emissions.`,
         });
         setExtractedData(result.data);
         setStatusStep('complete');

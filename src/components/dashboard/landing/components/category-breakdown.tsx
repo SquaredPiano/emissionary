@@ -43,11 +43,14 @@ const CustomTooltip = ({ active, payload }: any) => {
 export function CategoryBreakdown({ emissions }: CategoryBreakdownProps) {
   // Use real data if available, otherwise fallback to mock data
   const data = emissions?.categoryBreakdown ? 
-    Object.entries(emissions.categoryBreakdown).map(([category, data]: [string, any]) => ({
-      name: category.charAt(0).toUpperCase() + category.slice(1),
-      value: Math.round((data.totalEmissions / emissions.totalEmissions) * 100),
-      color: getCategoryColor(category)
-    })).filter(item => item.value > 0) : 
+    Object.entries(emissions.categoryBreakdown).map(([category, data]: [string, any]) => {
+      const canonical = category.toLowerCase();
+      return {
+        name: canonical.charAt(0).toUpperCase() + canonical.slice(1),
+        value: Math.round((data.totalEmissions / emissions.totalEmissions) * 100),
+        color: getCategoryColor(canonical)
+      }
+    }).filter(item => item.value > 0) : 
     getFallbackData();
 
   // Ensure 'Unknown' category is included if present in the breakdown
@@ -63,18 +66,26 @@ export function CategoryBreakdown({ emissions }: CategoryBreakdownProps) {
 
   function getCategoryColor(category: string): string {
     const colors: Record<string, string> = {
+      // Main food categories
+      produce: '#22c55e', // green-500
+      beverages: '#0ea5e9', // sky-500
+      snack: '#f59e0b', // yellow-500
       meat: '#ef4444', // red-500
       dairy: '#f97316', // orange-500
+      prepared_food: '#8b5cf6', // purple-500
+      bakery: '#84cc16', // lime-500
+      other: '#6b7280', // gray-500
+      
+      // Legacy categories for backward compatibility
       vegetables: '#22c55e', // green-500
       fruits: '#16a34a', // green-600
       grains: '#f59e0b', // yellow-500
       processed: '#8b5cf6', // purple-500
-      beverages: '#0ea5e9', // sky-500
       seafood: '#06b6d4', // cyan-500
       nuts: '#84cc16', // lime-500
       unknown: '#6b7280', // gray-500
     };
-    return colors[category] || '#6b7280'; // gray-500 as default
+    return colors[category.toLowerCase()] || '#6b7280'; // gray-500 as default
   }
 
   if (data.length === 0) {

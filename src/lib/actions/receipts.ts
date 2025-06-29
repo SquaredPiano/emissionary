@@ -237,11 +237,11 @@ export async function processReceiptImage(
         receiptId: serializedResult.id,
         items: processedData.data?.items?.map((item: any) => ({
           name: item.canonical_name || item.name,
-          category: item.category || 'unknown',
+          category: item.category || 'other',
           carbon_emissions: item.carbon_emissions ?? 0,
           confidence: item.confidence ?? 0.8,
-          source: item.source || '',
-          status: item.is_food === false ? 'Unknown' : 'Mapped',
+          source: item.source || 'groq_ai',
+          status: item.status || 'processed',
           estimated_weight_kg: null,
           unit_price: item.total_price ? item.total_price / item.quantity : null,
           total_price: item.total_price ?? null,
@@ -250,6 +250,7 @@ export async function processReceiptImage(
         itemsCount: processedData.data?.items?.length || 0,
         processingSteps: processedData.data?.processing_steps,
         warnings: processedData.data?.warnings,
+        merchant: processedData.data?.merchant || "Unknown Merchant",
       },
     };
 
@@ -607,19 +608,41 @@ export async function getUserEmissionsStats(): Promise<{ success: boolean; data?
       };
     });
 
+    // Generate weekly data for the last 7 days
+    const weeklyData = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(now);
+      date.setDate(now.getDate() - 6 + i); // Last 7 days
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(date.getDate() + 1);
+      
+      const dayEmissions = monthlyEmissions.filter(receipt => {
+        const receiptDate = new Date(receipt.date);
+        return receiptDate >= date && receiptDate < nextDate;
+      });
+      
+      return {
+        date: date.toISOString().split('T')[0], // YYYY-MM-DD format
+        emissions: dayEmissions.reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0),
+        receipts: dayEmissions.length,
+      };
+    });
+
     // Process category breakdown
     const categoryStats: Record<string, { count: number; totalEmissions: number; items: string[] }> = {};
     categoryBreakdown.forEach(item => {
-      const category = item.category || 'Unknown';
+      // Normalize category to canonical lowercase
+      const canonicalCategory = (item.category || 'unknown').toLowerCase();
       const emissions = Number(item.carbonEmissions || 0);
       
-      if (!categoryStats[category]) {
-        categoryStats[category] = { count: 0, totalEmissions: 0, items: [] };
+      if (!categoryStats[canonicalCategory]) {
+        categoryStats[canonicalCategory] = { count: 0, totalEmissions: 0, items: [] };
       }
       
-      categoryStats[category].count += 1;
-      categoryStats[category].totalEmissions += emissions;
-      categoryStats[category].items.push(item.name);
+      categoryStats[canonicalCategory].count += 1;
+      categoryStats[canonicalCategory].totalEmissions += emissions;
+      categoryStats[canonicalCategory].items.push(item.name);
     });
 
     return {
@@ -631,6 +654,7 @@ export async function getUserEmissionsStats(): Promise<{ success: boolean; data?
         weeklyAverage: weeklyAverage,
         fourWeekTotal: fourWeekTotal,
         monthlyData,
+        weeklyData,
         categoryBreakdown: categoryStats,
         averageEmissionsPerReceipt: totalReceipts > 0 ? Number(totalEmissions._sum.totalCarbonEmissions || 0) / totalReceipts : 0,
       },

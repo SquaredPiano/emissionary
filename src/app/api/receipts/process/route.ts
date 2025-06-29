@@ -58,19 +58,28 @@ export async function POST(request: NextRequest) {
       category: item.category || 'unknown',
       carbon_emissions: item.estimated_carbon_emissions_kg ?? item.carbon_emissions ?? 0,
       confidence: item.confidence ?? 0.8,
-      source: item.source || '',
+      source: item.source || 'unknown',
       status: item.is_food_item === false ? 'Unknown' : 'Mapped',
       estimated_weight_kg: item.estimated_weight_kg ?? null,
       unit_price: item.unit_price ?? null,
       total_price: item.total_price ?? null,
+      quantity: item.quantity ?? 1,
     }));
     logger.info('API: Returning mapped items to frontend', { items });
+
+    // Calculate emission source breakdown
+    const emissionSources = items.reduce((acc: Record<string, number>, item: any) => {
+      const source = item.source || 'unknown';
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {});
 
     logger.info("Receipt processing completed successfully", { 
       userId, 
       receiptId: serializedData?.receiptId,
       totalEmissions: serializedData?.totalEmissions,
-      itemsCount: items.length
+      itemsCount: items.length,
+      emissionSources
     });
 
     return NextResponse.json({
@@ -80,6 +89,7 @@ export async function POST(request: NextRequest) {
         items,
         totalEmissions: serializedData?.totalEmissions ?? 0,
         itemsCount: items.length,
+        emissionSources,
       },
     });
 

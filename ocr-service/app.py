@@ -64,7 +64,7 @@ class OptimizedOCRProcessor:
         try:
             logger.info(f"Using optimized config: {self.best_config}")
             text = pytesseract.image_to_string(processed_img, config=self.best_config)
-            
+
             # Clean up the text
             text = text.strip()
             
@@ -91,7 +91,7 @@ class OptimizedOCRProcessor:
                     raise ValueError("Failed to decode image from bytes")
             
             logger.info(f"Image shape: {img_array.shape}")
-            
+
             # Extract text using optimized method
             text = self.extract_text_optimized(img_array)
             
@@ -185,7 +185,7 @@ async def ocr_receipt(file: UploadFile):
             return JSONResponse(content={"error": str(e)}, status_code=400)
     else:
         logger.error("Uploaded file is not an image")
-        return JSONResponse(content={"error": "Uploaded file is not an image"}, status_code=400)
+        return JSONResponse(content={"error": "Uploaded file is not an image"}, status_code=400) 
 
 if __name__ == "__main__":
     import uvicorn

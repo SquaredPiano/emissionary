@@ -1,6 +1,8 @@
 import { OCRResponseSchema, type OCRResponse, type OCRItem } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
+import fs from 'fs';
+import path from 'path';
 
 /**
  * OCR Service Configuration Interface
@@ -65,6 +67,18 @@ export class OCRValidationError extends OCRServiceError {
   }
 }
 
+const DEBUG_DIR = path.join(process.cwd(), 'ocr-debug-outputs');
+if (!fs.existsSync(DEBUG_DIR)) fs.mkdirSync(DEBUG_DIR);
+
+function saveDebugOutput(imageBuffer: Buffer, text: string, method: string, config: string, imageName: string) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const base = path.parse(imageName).name;
+  const imgPath = path.join(DEBUG_DIR, `${base}_${method}_${config}_${timestamp}.png`);
+  const txtPath = path.join(DEBUG_DIR, `${base}_${method}_${config}_${timestamp}.txt`);
+  fs.writeFileSync(imgPath, imageBuffer);
+  fs.writeFileSync(txtPath, text);
+}
+
 /**
  * OCR Service Implementation
  * 
@@ -126,8 +140,8 @@ export class OCRService {
         : await this.processSingle(imageBuffer, imageType, context);
 
       const processingTime = Date.now() - startTime;
-      
-      logger.info("OCR processing completed successfully", {
+
+      logger.info("OCR processing completed successfully", { 
         ...context,
         processingTime,
         itemsCount: result.items?.length || 0,

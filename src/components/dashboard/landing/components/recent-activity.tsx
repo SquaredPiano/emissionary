@@ -59,7 +59,13 @@ export function RecentActivity({ receipts, highlightedReceiptId }: RecentActivit
       total: Number(receipt.total),
       emissions: Number(receipt.totalCarbonEmissions || 0),
       items: receipt.receiptItems?.length || 0,
-      status: 'processed'
+      status: 'processed',
+      // Add emission source information if available
+      emissionSource: receipt.receiptItems?.some((item: any) => item.source) ? 
+        receipt.receiptItems?.reduce((acc: any, item: any) => {
+          acc[item.source || 'unknown'] = (acc[item.source || 'unknown'] || 0) + 1;
+          return acc;
+        }, {}) : null
     })) : 
     getFallbackData();
 
@@ -121,6 +127,15 @@ export function RecentActivity({ receipts, highlightedReceiptId }: RecentActivit
                   <Leaf className="h-3 w-3 text-green-600" />
                   <span className="font-medium text-green-600">{activity.emissions.toFixed(1)} kg</span>
                 </div>
+                {activity.emissionSource && (
+                  <div className="text-xs text-muted-foreground">
+                    {Object.entries(activity.emissionSource).map(([source, count]: [string, any]) => (
+                      <span key={source} className="mr-1">
+                        {source}: {count}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <Badge 
                   variant={activity.status === 'processed' ? 'default' : 'secondary'}
                   className="text-xs"

@@ -24,7 +24,16 @@ interface UploadedFile {
   receiptId?: string;
   totalEmissions?: number;
   itemsCount?: number;
-  ocrResult?: any;
+  merchant?: string;
+  ocrResult?: {
+    items: any[];
+    totalEmissions: number;
+    itemsCount: number;
+    merchant: string;
+    processingSteps: string[];
+    warnings: string[];
+  };
+  emissionSources?: Record<string, number>;
 }
 
 export function FileUploader({ onFileUpload }: FileUploaderProps) {
@@ -48,9 +57,10 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
 
       // Check if OCR processing was successful
       if (file.ocrSuccess) {
+        const merchant = file.merchant || file.ocrResult?.merchant || "Unknown Merchant";
         toast({
           title: "Receipt processed successfully! 🎉",
-          description: `Found ${file.itemsCount || 0} items with ${(file.totalEmissions || 0).toFixed(2)} kg CO2e emissions.`,
+          description: `${merchant}: ${file.itemsCount || 0} items with ${(file.totalEmissions || 0).toFixed(2)} kg CO2e emissions.`,
         });
         
         // Navigate to dashboard after a short delay to show the success message
@@ -191,8 +201,13 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
                       Receipt processed successfully!
                     </p>
                     <p className="text-xs text-green-600 dark:text-green-400">
-                      {uploadedFile.itemsCount || 0} items found • {(uploadedFile.totalEmissions || 0).toFixed(2)} kg CO2e
+                      {uploadedFile.merchant || uploadedFile.ocrResult?.merchant || "Unknown Merchant"} • {uploadedFile.itemsCount || 0} items • {(uploadedFile.totalEmissions || 0).toFixed(2)} kg CO2e
                     </p>
+                    {uploadedFile.ocrResult?.warnings && uploadedFile.ocrResult.warnings.length > 0 && (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                        ⚠️ {uploadedFile.ocrResult.warnings.length} warning(s) during processing
+                      </p>
+                    )}
                   </div>
                 </div>
                 

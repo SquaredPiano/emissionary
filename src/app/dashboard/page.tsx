@@ -167,6 +167,7 @@ export default async function DashboardPage({
       weeklyAverage: emissionsData.weeklyAverage,
       fourWeekTotal: emissionsData.fourWeekTotal,
       monthlyData: emissionsData.monthlyData,
+      weeklyData: emissionsData.weeklyData,
       categoryBreakdown: emissionsData.categoryBreakdown,
       averageEmissionsPerReceipt: emissionsData.averageEmissionsPerReceipt,
     });

@@ -4,8 +4,9 @@ import { groqAIService } from "./groq-ai";
 import { ValidationService } from "./validation";
 import { FallbackService } from "./fallback";
 import { generateRequestId } from "@/lib/utils/request-id";
-import { ProcessingResult, ProcessingOptions, EnhancedItem } from "../../database.types";
 import { z } from "zod";
+import { searchFoodByName, getEmissionsByName } from '@/lib/data/food-dataset';
+import { NON_FOOD_KEYWORDS } from "@/lib/utils/constants";
 
 /**
  * Receipt Processing Configuration Interface
@@ -218,72 +219,152 @@ export class ReceiptProcessingService {
         correlationId
       );
 
-      // Don't fail if AI parsing doesn't find items - use fallback data
+      // Always prefer Groq AI items if available, fallback only if none
       let items = aiResult.data?.items || [];
-      if (!aiResult.success || items.length === 0) {
+      let usedGroqAI = aiResult.success && items.length > 0;
+      let merchant = aiResult.data?.merchant;
+      
+      if (!usedGroqAI) {
         warnings.push("AI parsing found no items, using fallback categorization");
-        
-        // Use fallback service to extract basic items from OCR text
         const fallbackItems = await this.extractFallbackItems(ocrResult.data || "");
         items = fallbackItems;
-        
         if (items.length === 0) {
           warnings.push("No items could be extracted from receipt text");
-          // Still don't fail - return empty items list
         }
       }
 
-      // Step 4: Data Enhancement
+      // Step 3.5: Post-processing filter for non-food lines
+      items = items.filter(item => {
+        const name = (item.name || "").toLowerCase();
+        const category = (item.category || "").toLowerCase();
+        return !NON_FOOD_KEYWORDS.some(keyword => name.includes(keyword) || category.includes(keyword));
+      });
+
+      // Step 4: Data Enhancement (with Groq AI name preference)
       processingSteps.push("Data Enhancement");
-      const enhancedItems = await this.enhanceItemsWithDatabase(
-        items,
-        { userId, requestId, enableFallbacks },
-        correlationId
+      logger.info("Step 4: Data Enhancement", { 
+        correlationId, 
+        itemsCount: items.length 
+      });
+
+      // Ensure all items have proper structure and status
+      const enhancedItems = items.map(item => ({
+        name: item.canonical_name || item.name || "Unknown Item",
+        canonical_name: item.canonical_name || item.name || "unknown",
+        quantity: item.quantity > 0 ? item.quantity : 1,
+        total_price: item.total_price >= 0 ? item.total_price : 0,
+        category: item.category || "other",
+        is_food: typeof item.is_food === "boolean" ? item.is_food : true,
+        carbon_emissions: item.carbon_emissions ?? 0,
+        confidence: item.confidence ?? 0.8,
+        source: item.source || (usedGroqAI ? "groq_ai" : "fallback"),
+        status: item.status || (usedGroqAI ? "processed" : "processed"),
+      }));
+
+      // Step 4.5: Estimate emissions for all items using Groq AI
+      processingSteps.push("Emissions Estimation");
+      logger.info("Step 4.5: Estimating emissions with Groq AI", { 
+        correlationId, 
+        itemsCount: enhancedItems.length 
+      });
+
+      const itemsWithEmissions = await Promise.all(
+        enhancedItems.map(async (item) => {
+          try {
+            // Always try to estimate emissions with Groq AI for better accuracy
+            const emissionsResult = await groqAIService.estimateEmissionsWithGroqAI(item, {
+              userId,
+              requestId,
+              enableRetries: true,
+            });
+
+            if (emissionsResult.success && emissionsResult.data?.carbon_emissions) {
+              return {
+                ...item,
+                carbon_emissions: emissionsResult.data.carbon_emissions,
+                confidence: Math.max(item.confidence, 0.7),
+                source: "groq_ai",
+                status: "processed",
+              };
+            } else {
+              // Keep existing emissions if Groq AI fails
+              return {
+                ...item,
+                source: item.source === "groq_ai" ? "fallback" : item.source,
+                status: "processed",
+              };
+            }
+          } catch (error) {
+            logger.warn("Failed to estimate emissions for item", { 
+              error: error instanceof Error ? error.message : String(error),
+              itemName: item.name 
+            });
+            return {
+              ...item,
+              status: "processed",
+            };
+          }
+        })
       );
 
       // Step 5: Final Validation
       processingSteps.push("Final Validation");
-      const finalValidation = ValidationService.validateProcessedItems(enhancedItems);
-      
-      if (!finalValidation.isValid) {
-        warnings.push(...finalValidation.warnings);
-      }
+      logger.info("Step 5: Final Validation", { 
+        correlationId, 
+        itemsCount: itemsWithEmissions.length 
+      });
 
-      // Step 6: Calculate Totals
+      const validItems = itemsWithEmissions.filter(item => {
+        if (!item.name || item.name === "Unknown Item") {
+          warnings.push(`Item with invalid name filtered out: ${JSON.stringify(item)}`);
+          return false;
+        }
+        if (item.carbon_emissions < 0) {
+          warnings.push(`Item with negative emissions corrected: ${item.name}`);
+          item.carbon_emissions = 0;
+        }
+        return true;
+      });
+
+      // Step 6: Emissions Calculation
       processingSteps.push("Emissions Calculation");
-      const totalEmissions = enhancedItems.reduce(
-        (sum, item) => sum + (item.carbon_emissions || 0),
-        0
-      );
+      const total_carbon_emissions = validItems.reduce((sum, item) => sum + (item.carbon_emissions || 0), 0);
+      
+      logger.info("Step 6: Emissions Calculation", { 
+        correlationId, 
+        totalEmissions: total_carbon_emissions,
+        itemsCount: validItems.length 
+      });
 
       const processingTime = Date.now() - startTime;
 
       logger.info("Receipt processing completed successfully", {
         correlationId,
         userId,
-        itemsCount: enhancedItems.length,
-        totalEmissions,
         processingTime,
-        warnings: warnings.length
+        itemsCount: validItems.length,
+        totalEmissions: total_carbon_emissions,
+        merchant,
+        processingSteps,
+        warnings: warnings.length,
       });
 
       return {
         success: true,
+        retry_available: false,
         data: {
-          items: enhancedItems,
-          total_carbon_emissions: totalEmissions,
+          items: validItems,
+          merchant: merchant || "Unknown Merchant",
+          total: 0, // Will be calculated from items if needed
+          total_carbon_emissions,
           processing_time: processingTime,
           processing_steps: processingSteps,
           warnings,
-          ocr_text: ocrResult.data,
-          ai_enhanced: aiResult.success
         },
       };
 
     } catch (error) {
-      logger.error("Receipt processing failed", {
-        error: error instanceof Error ? error.message : String(error)
-      });
+      logger.error("Receipt processing failed", error instanceof Error ? error : new Error(String(error)));
 
       return this.createErrorResult(
         "PROCESSING_FAILED",
@@ -305,29 +386,128 @@ export class ReceiptProcessingService {
       const items: any[] = [];
       
       for (const line of lines) {
-        // Look for price patterns
-        const priceMatch = line.match(/\$(\d+\.\d{2})/);
+        // Look for price patterns - be more flexible
+        const priceMatch = line.match(/(\d+\.\d{2})/);
         if (priceMatch) {
           const price = parseFloat(priceMatch[1]);
           const itemName = line.substring(0, priceMatch.index).trim();
           
-          if (itemName.length > 2) {
-            // Create a basic item and apply fallbacks
-            const basicItem = {
-              name: itemName,
-              canonical_name: itemName.toLowerCase(),
-              quantity: 1.0,
-              total_price: price,
-              category: "processed", // Will be enhanced by fallback service
-              carbon_emissions: 2.0,
-              confidence: 0.3,
-              is_food: true,
-              source: 'fallback'
-            };
+          // Skip lines that are clearly not food items - be less restrictive
+          if (itemName.length < 2 || 
+              itemName.toLowerCase().includes('total') ||
+              itemName.toLowerCase().includes('tax') ||
+              itemName.toLowerCase().includes('subtotal') ||
+              itemName.toLowerCase().includes('gst') ||
+              itemName.toLowerCase().includes('hst') ||
+              itemName.toLowerCase().includes('pst') ||
+              itemName.toLowerCase().includes('cash') ||
+              itemName.toLowerCase().includes('credit') ||
+              itemName.toLowerCase().includes('debit') ||
+              itemName.toLowerCase().includes('change') ||
+              itemName.toLowerCase().includes('receipt')) {
+            continue;
+          }
+
+          // Extract quantity if present (e.g., "2 @ $5.99ea")
+          let quantity = 1;
+          const quantityMatch = line.match(/(\d+(?:\.\d+)?)\s*@\s*\$\d+\.\d+/);
+          if (quantityMatch) {
+            quantity = parseFloat(quantityMatch[1]);
+          }
+
+          // Clean up the item name - more aggressive cleaning for OCR errors
+          let cleanName = itemName
+            .replace(/\(SALE\)/gi, '')
+            .replace(/\(/g, '')
+            .replace(/\)/g, '')
+            .replace(/\d+\.\d+\s*Kg\s*@\s*\d+\.\d+\/Kg/gi, '')
+            .replace(/\d+\.\d+\/EA/gi, '')
+            .replace(/\d+\s*@\s*\$\d+\.\d+ea/gi, '')
+            .replace(/W\s*\$\d+\.\d+\s*G/gi, '')
+            // Remove barcodes and product codes
+            .replace(/\d{10,}/g, '') // Remove long number sequences (barcodes)
+            .replace(/\d{3,}\s*$/g, '') // Remove trailing numbers
+            .replace(/^\d+\s*/g, '') // Remove leading numbers
+            // Clean up common OCR errors
+            .replace(/\s+/g, ' ') // Multiple spaces to single space
+            .replace(/[^\w\s]/g, ' ') // Remove special characters except spaces
+            .trim();
+
+          if (cleanName.length > 1) { // Reduced minimum length
+            // Try to match with database first
+            const dbMatch = searchFoodByName(cleanName, 1)[0];
             
-            // Apply fallbacks to enhance the item
-            const enhancedItem = FallbackService.applyBasicFallbacks(basicItem);
-            items.push(enhancedItem);
+            let category = 'other';
+            let emissions = 2.0;
+            let confidence = 0.6;
+            let source = 'fallback';
+            
+            if (dbMatch) {
+              category = dbMatch.category;
+              emissions = dbMatch.emissions;
+              confidence = 0.9;
+              source = 'dataset';
+              // Use the database name as the clean name
+              cleanName = dbMatch.food;
+            } else {
+              // Determine category based on item name if no database match
+              const lowerName = cleanName.toLowerCase();
+              
+              if (lowerName.includes('food') || lowerName.includes('cooked') || lowerName.includes('hot')) {
+                category = 'prepared_food';
+              } else if (lowerName.includes('duck') || lowerName.includes('chicken') || lowerName.includes('beef') || lowerName.includes('pork')) {
+                category = 'meat';
+              } else if (lowerName.includes('milk') || lowerName.includes('cheese') || lowerName.includes('yogurt')) {
+                category = 'dairy';
+              } else if (lowerName.includes('bread') || lowerName.includes('rice') || lowerName.includes('noodle') || lowerName.includes('spaghetti')) {
+                category = 'bakery';
+              } else if (lowerName.includes('apple') || lowerName.includes('banana') || lowerName.includes('orange') || lowerName.includes('strawberry')) {
+                category = 'produce';
+              } else if (lowerName.includes('water') || lowerName.includes('soda') || lowerName.includes('juice')) {
+                category = 'beverage';
+              } else if (lowerName.includes('chip') || lowerName.includes('snack')) {
+                category = 'snack';
+              }
+            }
+
+            const basicItem = {
+              name: cleanName,
+              canonical_name: cleanName.toLowerCase(),
+              quantity: quantity,
+              total_price: price,
+              category,
+              carbon_emissions: emissions * quantity,
+              confidence,
+              is_food: true,
+              source,
+              status: 'processed',
+            };
+            items.push(basicItem);
+          }
+        }
+      }
+      
+      // If no items found with price pattern, try to extract any text that looks like food
+      if (items.length === 0) {
+        const words = ocrText.split(/\s+/).filter(word => word.length > 2);
+        const foodKeywords = ['milk', 'bread', 'cheese', 'apple', 'banana', 'chicken', 'beef', 'rice', 'pasta', 'soup', 'cereal', 'yogurt', 'butter', 'eggs', 'meat', 'fish', 'vegetable', 'fruit', 'potato', 'tomato', 'onion', 'carrot', 'lettuce', 'spinach', 'broccoli', 'cauliflower', 'pepper', 'cucumber', 'mushroom', 'garlic', 'ginger', 'lemon', 'lime', 'orange', 'grape', 'strawberry', 'blueberry', 'raspberry', 'blackberry', 'peach', 'pear', 'plum', 'cherry', 'grapefruit', 'pineapple', 'mango', 'kiwi', 'avocado', 'coconut', 'olive', 'almond', 'walnut', 'peanut', 'cashew', 'pistachio', 'sunflower', 'pumpkin', 'sesame', 'flax', 'chia', 'quinoa', 'oat', 'wheat', 'corn', 'barley', 'rye', 'sorghum', 'millet', 'buckwheat', 'amaranth', 'teff', 'spelt', 'kamut', 'farro', 'bulgur', 'couscous', 'polenta', 'grits', 'hominy', 'tortilla', 'pita', 'naan', 'bagel', 'croissant', 'muffin', 'donut', 'cookie', 'cake', 'pie', 'pastry', 'biscuit', 'cracker', 'pretzel', 'popcorn', 'chips', 'nuts', 'seeds', 'dried', 'canned', 'frozen', 'fresh', 'organic', 'natural', 'whole', 'grain', 'white', 'brown', 'wild', 'basmati', 'jasmine', 'arborio', 'carnaroli', 'vialone', 'nano', 'baldo', 'pearl', 'black', 'red', 'green', 'yellow', 'purple', 'orange', 'pink', 'blue', 'indigo', 'violet', 'rainbow', 'heirloom', 'baby', 'mini', 'large', 'medium', 'small', 'jumbo', 'extra', 'super', 'premium', 'select', 'choice', 'prime', 'grade', 'a', 'b', 'c', 'd', 'f', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+        
+        for (const word of words) {
+          const cleanWord = word.toLowerCase().replace(/[^\w]/g, '');
+          if (foodKeywords.some(keyword => cleanWord.includes(keyword) || keyword.includes(cleanWord))) {
+            const basicItem = {
+              name: word,
+              canonical_name: cleanWord,
+              quantity: 1,
+              total_price: 0,
+              category: 'other',
+              carbon_emissions: 2.0,
+              confidence: 0.4,
+              is_food: true,
+              source: 'fallback',
+              status: 'processed',
+            };
+            items.push(basicItem);
           }
         }
       }
@@ -477,71 +657,6 @@ export class ReceiptProcessingService {
       processingTime,
       retryCount: this.config.maxRetries,
     };
-  }
-
-  /**
-   * Enhance items with database matching and fallbacks
-   */
-  private async enhanceItemsWithDatabase(
-    items: any[],
-    options: { userId?: string; requestId?: string; enableFallbacks?: boolean },
-    correlationId: string
-  ): Promise<EnhancedItem[]> {
-    const { userId, requestId, enableFallbacks = true } = options;
-    const enhancedItems: EnhancedItem[] = [];
-
-    for (const item of items) {
-      try {
-        // Apply fallbacks for missing data
-        const enhancedItem = enableFallbacks 
-          ? FallbackService.applyFallbacks(item)
-          : item;
-        
-        // Match with database
-        const dbMatch = groqAIService.matchWithDatabase(enhancedItem.canonical_name);
-        
-        if (dbMatch) {
-          enhancedItem.carbon_emissions = dbMatch.emissions * enhancedItem.quantity;
-          enhancedItem.confidence = 1.0;
-          enhancedItem.source = "dataset";
-        } else {
-          // Estimate emissions if not in database
-          const estimatedEmissions = await this.estimateEmissions(enhancedItem);
-          enhancedItem.carbon_emissions = estimatedEmissions * enhancedItem.quantity;
-          enhancedItem.confidence = 0.7;
-          enhancedItem.source = "ai_estimation";
-        }
-
-        enhancedItems.push(enhancedItem as EnhancedItem);
-      } catch (error) {
-        logger.warn("Failed to enhance item", { 
-          correlationId,
-          item: item.name,
-          error: error instanceof Error ? error.message : String(error)
-        });
-        
-        // Apply basic fallbacks and continue
-        if (enableFallbacks) {
-          const fallbackItem = FallbackService.applyBasicFallbacks(item);
-          enhancedItems.push(fallbackItem as EnhancedItem);
-        }
-      }
-    }
-
-    return enhancedItems;
-  }
-
-  /**
-   * Estimate emissions for unknown items
-   */
-  private async estimateEmissions(item: any): Promise<number> {
-    try {
-      const estimatedEmissions = await groqAIService.estimateEmissionsWithGroqAI(item);
-      return estimatedEmissions.data?.carbon_emissions || 2.0; // Default fallback
-    } catch (error) {
-      logger.warn("Failed to estimate emissions", error instanceof Error ? error : new Error(String(error)));
-      return 2.0; // Conservative default
-    }
   }
 
   /**
