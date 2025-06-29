@@ -1,48 +1,64 @@
 import { Leaf, TrendingUp, TrendingDown, Scale, Globe, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// TODO: Replace with actual data from backend API calls
-const mockEmissionData = {
+interface DashboardUsageCardGroupProps {
+  user?: any;
+  stats?: any;
+  emissions?: any;
+}
+
+// Fallback data when no real data is available
+const getFallbackData = () => ({
   totalEmissionsWeek: 12.4,
   weeklyAverage: 15.2,
   canadianAverage: 18.5,
   globalAverage: 22.1,
   highestItem: { name: 'Beef (500g)', emissions: 8.2 },
   lowestItem: { name: 'Bananas (1kg)', emissions: 0.8 }
-};
+});
 
-const cards = [
-  {
-    title: "This Week's Emissions",
-    icon: <Leaf className={'text-green-500'} size={18} />,
-    value: `${mockEmissionData.totalEmissionsWeek} kg CO₂e`,
-    change: `${mockEmissionData.totalEmissionsWeek < mockEmissionData.weeklyAverage ? '↓' : '↑'} ${Math.abs(mockEmissionData.totalEmissionsWeek - mockEmissionData.weeklyAverage).toFixed(1)} kg vs average`,
-    trend: mockEmissionData.totalEmissionsWeek < mockEmissionData.weeklyAverage ? 'positive' : 'negative'
-  },
-  {
-    title: "Weekly Average",
-    icon: <Scale className={'text-blue-500'} size={18} />,
-    value: `${mockEmissionData.weeklyAverage} kg CO₂e`,
-    change: "Last 4 weeks",
-    trend: 'neutral'
-  },
-  {
-    title: "vs Canadian Average",
-    icon: <Target className={'text-emerald-500'} size={18} />,
-    value: `${mockEmissionData.canadianAverage} kg CO₂e`,
-    change: `${mockEmissionData.totalEmissionsWeek < mockEmissionData.canadianAverage ? '↓' : '↑'} ${Math.abs(mockEmissionData.totalEmissionsWeek - mockEmissionData.canadianAverage).toFixed(1)} kg difference`,
-    trend: mockEmissionData.totalEmissionsWeek < mockEmissionData.canadianAverage ? 'positive' : 'negative'
-  },
-  {
-    title: "vs Global Average",
-    icon: <Globe className={'text-yellow-500'} size={18} />,
-    value: `${mockEmissionData.globalAverage} kg CO₂e`,
-    change: `${mockEmissionData.totalEmissionsWeek < mockEmissionData.globalAverage ? '↓' : '↑'} ${Math.abs(mockEmissionData.totalEmissionsWeek - mockEmissionData.globalAverage).toFixed(1)} kg difference`,
-    trend: mockEmissionData.totalEmissionsWeek < mockEmissionData.globalAverage ? 'positive' : 'negative'
-  },
-];
+export function DashboardUsageCardGroup({ user, stats, emissions }: DashboardUsageCardGroupProps) {
+  // Use real data if available, otherwise fallback to mock data
+  const emissionData = emissions?.data ? {
+    totalEmissionsWeek: emissions.data.totalEmissions || 0,
+    weeklyAverage: emissions.data.averageEmissionsPerReceipt || 0,
+    canadianAverage: 18.5, // TODO: Get from API
+    globalAverage: 22.1, // TODO: Get from API
+    highestItem: { name: 'N/A', emissions: 0 },
+    lowestItem: { name: 'N/A', emissions: 0 }
+  } : getFallbackData();
 
-export function DashboardUsageCardGroup() {
+  const cards = [
+    {
+      title: "This Week's Emissions",
+      icon: <Leaf className={'text-green-500'} size={18} />,
+      value: `${emissionData.totalEmissionsWeek.toFixed(1)} kg CO₂e`,
+      change: `${emissionData.totalEmissionsWeek < emissionData.weeklyAverage ? '↓' : '↑'} ${Math.abs(emissionData.totalEmissionsWeek - emissionData.weeklyAverage).toFixed(1)} kg vs average`,
+      trend: emissionData.totalEmissionsWeek < emissionData.weeklyAverage ? 'positive' : 'negative'
+    },
+    {
+      title: "Weekly Average",
+      icon: <Scale className={'text-blue-500'} size={18} />,
+      value: `${emissionData.weeklyAverage.toFixed(1)} kg CO₂e`,
+      change: "Last 4 weeks",
+      trend: 'neutral'
+    },
+    {
+      title: "vs Canadian Average",
+      icon: <Target className={'text-emerald-500'} size={18} />,
+      value: `${emissionData.canadianAverage} kg CO₂e`,
+      change: `${emissionData.totalEmissionsWeek < emissionData.canadianAverage ? '↓' : '↑'} ${Math.abs(emissionData.totalEmissionsWeek - emissionData.canadianAverage).toFixed(1)} kg difference`,
+      trend: emissionData.totalEmissionsWeek < emissionData.canadianAverage ? 'positive' : 'negative'
+    },
+    {
+      title: "vs Global Average",
+      icon: <Globe className={'text-yellow-500'} size={18} />,
+      value: `${emissionData.globalAverage} kg CO₂e`,
+      change: `${emissionData.totalEmissionsWeek < emissionData.globalAverage ? '↓' : '↑'} ${Math.abs(emissionData.totalEmissionsWeek - emissionData.globalAverage).toFixed(1)} kg difference`,
+      trend: emissionData.totalEmissionsWeek < emissionData.globalAverage ? 'positive' : 'negative'
+    },
+  ];
+
   return (
     <>
       {cards.map((card) => (

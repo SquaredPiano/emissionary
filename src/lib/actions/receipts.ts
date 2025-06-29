@@ -2,38 +2,32 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { DatabaseService } from "@/lib/services/database";
-import { OCRService } from "@/lib/services/ocr";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { 
-  CreateReceiptSchema,
-  CreateReceiptItemSchema,
-  CreateEmissionsLogSchema,
-  PaginationSchema,
-  ReceiptFilterSchema,
-  type CreateReceipt,
-  type CreateReceiptItem,
-  type CreateEmissionsLog,
-  type Pagination,
-  type ReceiptFilter
+  CreateReceiptFromOCRSchema,
+  CreateReceiptItemFromOCRSchema,
+  type OCRResponse,
+  type OCRItem
 } from "@/lib/schemas";
-import { z } from "zod";
+import { OCRService } from "@/lib/services/ocr";
+import { Decimal } from "@prisma/client/runtime/library";
 
-// Input schemas for server actions
+// Validation schemas
 const ProcessReceiptSchema = z.object({
   imageUrl: z.string().url(),
-  fileName: z.string().min(1),
-  fileType: z.string().min(1),
+  imageType: z.string(),
+  fileName: z.string(),
 });
 
 const GetReceiptsSchema = z.object({
-  pagination: PaginationSchema.optional(),
-  filters: ReceiptFilterSchema.optional(),
-});
-
-const UpdateReceiptSchema = z.object({
-  receiptId: z.string().cuid(),
-  data: CreateReceiptSchema.partial(),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+  merchant: z.string().optional(),
 });
 
 const DeleteReceiptSchema = z.object({
@@ -41,414 +35,504 @@ const DeleteReceiptSchema = z.object({
 });
 
 /**
- * Process a receipt image through OCR and save to database
+ * Process receipt image through OCR and save to database
  */
-export async function processReceipt(input: z.infer<typeof ProcessReceiptSchema>) {
+export async function processReceiptImage(
+  data: z.infer<typeof ProcessReceiptSchema>
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     // Authenticate user
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized" };
     }
 
     // Validate input
-    const validatedInput = ProcessReceiptSchema.parse(input);
+    const validatedData = ProcessReceiptSchema.parse(data);
+
+    logger.info("Processing receipt image", { userId, fileName: validatedData.fileName });
 
     // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
     if (!user) {
-      throw new Error("User not found");
+      return { success: false, error: "User not found" };
     }
 
-    // Download image from UploadThing
-    const imageResponse = await fetch(validatedInput.imageUrl);
+    // Download image from UploadThing URL
+    const imageResponse = await fetch(validatedData.imageUrl);
     if (!imageResponse.ok) {
-      throw new Error("Failed to download image");
+      return { success: false, error: "Failed to download image" };
     }
 
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
 
-    // Process through OCR
+    // Process through OCR service
     const ocrResult = await OCRService.processReceiptImage(
       imageBuffer,
-      validatedInput.fileType,
+      validatedData.imageType,
       userId
     );
 
-    // Validate and clean OCR results
-    const validatedOcrResult = OCRService.validateOCRResults(ocrResult);
-
-    if (!validatedOcrResult.items || validatedOcrResult.items.length === 0) {
-      throw new Error("No items found in receipt. Please try with a clearer image.");
+    if (!ocrResult.success) {
+      return { success: false, error: ocrResult.error_message || "OCR processing failed" };
     }
 
-    // Transform OCR items to database format
-    const receiptItems = OCRService.transformOCRItemsToReceiptItems(validatedOcrResult.items);
+    // Calculate total carbon emissions if not present
+    let totalCarbonEmissions = ocrResult.total_carbon_emissions;
+    if (
+      (typeof totalCarbonEmissions !== 'number' || isNaN(totalCarbonEmissions)) &&
+      Array.isArray(ocrResult.items)
+    ) {
+      totalCarbonEmissions = ocrResult.items.reduce(
+        (sum, item) => sum + (item.carbon_emissions || 0),
+        0
+      );
+      logger.info("Calculated total carbon emissions from items", {
+        userId,
+        originalTotal: ocrResult.total_carbon_emissions,
+        calculatedTotal: totalCarbonEmissions,
+        itemsCount: ocrResult.items.length,
+        itemsWithEmissions: ocrResult.items.filter(item => (item.carbon_emissions || 0) > 0).length
+      });
+    } else {
+      logger.info("Using total carbon emissions from OCR result", {
+        userId,
+        totalCarbonEmissions,
+        itemsCount: ocrResult.items?.length || 0
+      });
+    }
 
-    // Prepare receipt data
-    const receiptData: CreateReceipt = {
-      imageUrl: validatedInput.imageUrl,
-      merchant: validatedOcrResult.merchant || "Unknown Merchant",
-      total: validatedOcrResult.total || 0,
-      date: validatedOcrResult.date ? new Date(validatedOcrResult.date) : new Date(),
+    // Transform OCR data to database format
+    const receiptData = {
+      imageUrl: validatedData.imageUrl,
+      merchant: ocrResult.merchant || "Unknown Merchant",
+      total: ocrResult.total || 0,
+      date: new Date(ocrResult.date || new Date()),
       currency: "USD",
+      totalCarbonEmissions: totalCarbonEmissions || 0,
+      processingTime: ocrResult.processing_time || 0,
     };
 
-    // Prepare emissions data
-    const emissionsData: CreateEmissionsLog = {
-      totalCO2: validatedOcrResult.total_carbon_emissions || 0,
-      breakdown: OCRService.createEmissionsBreakdown(validatedOcrResult.items),
-      calculationMethod: validatedOcrResult.llm_enhanced ? "llm_enhanced" : "basic",
-    };
+    logger.info("Receipt data prepared for database", {
+      userId,
+      merchant: receiptData.merchant,
+      total: receiptData.total,
+      totalCarbonEmissions: receiptData.totalCarbonEmissions,
+      itemsCount: ocrResult.items?.length || 0
+    });
 
-    // Save to database
-    const result = await DatabaseService.createReceiptWithItems(
-      user.id,
-      receiptData,
-      receiptItems,
-      emissionsData
-    );
+    // Validate receipt data
+    const validatedReceipt = CreateReceiptFromOCRSchema.parse(receiptData);
 
-    // Revalidate relevant pages
+    // Create receipt with items in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create receipt
+      const receipt = await tx.receipt.create({
+        data: {
+          userId: user.id,
+          imageUrl: validatedReceipt.imageUrl,
+          merchant: validatedReceipt.merchant,
+          total: new Decimal(validatedReceipt.total),
+          date: validatedReceipt.date,
+          currency: validatedReceipt.currency,
+          taxAmount: validatedReceipt.taxAmount ? new Decimal(validatedReceipt.taxAmount) : null,
+          tipAmount: validatedReceipt.tipAmount ? new Decimal(validatedReceipt.tipAmount) : null,
+          paymentMethod: validatedReceipt.paymentMethod,
+          receiptNumber: validatedReceipt.receiptNumber,
+          totalCarbonEmissions: new Decimal(validatedReceipt.totalCarbonEmissions),
+        },
+      });
+
+      // Create receipt items if available
+      if (ocrResult.items && ocrResult.items.length > 0) {
+        const receiptItems = OCRService.transformOCRItemsToReceiptItems(ocrResult.items);
+        
+        for (const item of receiptItems) {
+          await tx.receiptItem.create({
+            data: {
+              receiptId: receipt.id,
+              name: item.name,
+              quantity: new Decimal(item.quantity),
+              unitPrice: new Decimal(item.unitPrice),
+              totalPrice: new Decimal(item.totalPrice),
+              category: item.category,
+              brand: item.brand,
+              barcode: item.barcode,
+              description: item.description,
+              carbonEmissions: new Decimal(item.carbonEmissions),
+              confidence: new Decimal(item.confidence),
+            },
+          });
+        }
+      }
+
+      return receipt;
+    });
+
+    // Revalidate cache
     revalidatePath("/dashboard");
     revalidatePath("/history");
+
+    logger.info("Receipt processed successfully", { 
+      userId, 
+      receiptId: result.id,
+      itemsCount: ocrResult.items?.length || 0,
+      totalEmissions: ocrResult.total_carbon_emissions
+    });
 
     return {
       success: true,
       data: {
-        receipt: result.receipt,
-        items: result.items,
-        emissionsLog: result.emissionsLog,
-        ocrResult: validatedOcrResult,
+        receiptId: result.id,
+        ocrResult,
+        totalEmissions: ocrResult.total_carbon_emissions,
+        itemsCount: ocrResult.items?.length || 0,
       },
     };
+
   } catch (error) {
-    const { userId } = await auth();
-    logger.error("Process receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
+    logger.error("Error processing receipt", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: `Validation error: ${error.errors.map(e => e.message).join(", ")}`,
-      };
+      return { success: false, error: `Validation error: ${error.errors.map(e => e.message).join(", ")}` };
     }
     
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
     
-    return {
-      success: false,
-      error: "Failed to process receipt",
-    };
+    return { success: false, error: "Failed to process receipt" };
   }
 }
 
 /**
- * Get receipts for the authenticated user
+ * Get user's receipts with pagination and filtering
  */
-export async function getReceipts(input: z.infer<typeof GetReceiptsSchema> = {}) {
+export async function getUserReceipts(
+  data: z.infer<typeof GetReceiptsSchema>
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     // Authenticate user
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized" };
     }
 
     // Validate input
-    const validatedInput = GetReceiptsSchema.parse(input);
+    const validatedData = GetReceiptsSchema.parse(data);
 
     // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
     if (!user) {
-      throw new Error("User not found");
+      return { success: false, error: "User not found" };
     }
 
-    // Get receipts
-    const result = await DatabaseService.getReceiptsByUser(
-      user.id,
-      validatedInput.pagination,
-      validatedInput.filters
-    );
+    // Build where clause
+    const where: any = { userId: user.id };
+
+    if (validatedData.search) {
+      where.OR = [
+        { merchant: { contains: validatedData.search, mode: "insensitive" } },
+        { receiptItems: { some: { name: { contains: validatedData.search, mode: "insensitive" } } } },
+      ];
+    }
+
+    if (validatedData.merchant) {
+      where.merchant = { contains: validatedData.merchant, mode: "insensitive" };
+    }
+
+    if (validatedData.startDate || validatedData.endDate) {
+      where.date = {};
+      if (validatedData.startDate) where.date.gte = validatedData.startDate;
+      if (validatedData.endDate) where.date.lte = validatedData.endDate;
+    }
+
+    // Calculate pagination
+    const skip = (validatedData.page - 1) * validatedData.limit;
+
+    // Get receipts with related data
+    const [receipts, total] = await Promise.all([
+      prisma.receipt.findMany({
+        where,
+        include: {
+          receiptItems: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: validatedData.limit,
+      }),
+      prisma.receipt.count({ where }),
+    ]);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / validatedData.limit);
+    const hasNextPage = validatedData.page < totalPages;
+    const hasPrevPage = validatedData.page > 1;
 
     return {
       success: true,
-      data: result,
+      data: {
+        receipts,
+        pagination: {
+          page: validatedData.page,
+          limit: validatedData.limit,
+          total,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+        },
+      },
     };
+
   } catch (error) {
-    const { userId } = await auth();
-    logger.error("Get receipts error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
+    logger.error("Error getting user receipts", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: `Validation error: ${error.errors.map(e => e.message).join(", ")}`,
-      };
+      return { success: false, error: `Validation error: ${error.errors.map(e => e.message).join(", ")}` };
     }
     
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
     
-    return {
-      success: false,
-      error: "Failed to fetch receipts",
-    };
+    return { success: false, error: "Failed to get receipts" };
   }
 }
 
 /**
- * Get a single receipt by ID
+ * Get single receipt by ID
  */
-export async function getReceipt(receiptId: string) {
+export async function getReceiptById(
+  receiptId: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     // Authenticate user
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized" };
     }
 
     // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
     if (!user) {
-      throw new Error("User not found");
+      return { success: false, error: "User not found" };
     }
 
-    // Get receipt
-    const receipt = await DatabaseService.getReceiptById(receiptId, user.id);
+    // Get receipt with related data
+    const receipt = await prisma.receipt.findFirst({
+      where: {
+        id: receiptId,
+        userId: user.id,
+      },
+      include: {
+        receiptItems: true,
+      },
+    });
+
     if (!receipt) {
-      throw new Error("Receipt not found");
+      return { success: false, error: "Receipt not found" };
     }
 
     return {
       success: true,
       data: receipt,
     };
+
   } catch (error) {
-    const { userId } = await auth();
-    logger.error("Get receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined, receiptId });
+    logger.error("Error getting receipt", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
     
-    return {
-      success: false,
-      error: "Failed to fetch receipt",
-    };
+    return { success: false, error: "Failed to get receipt" };
   }
 }
 
 /**
- * Update a receipt
+ * Delete receipt and all related data
  */
-export async function updateReceipt(input: z.infer<typeof UpdateReceiptSchema>) {
+export async function deleteReceipt(
+  data: z.infer<typeof DeleteReceiptSchema>
+): Promise<{ success: boolean; error?: string }> {
   try {
     // Authenticate user
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized" };
     }
 
     // Validate input
-    const validatedInput = UpdateReceiptSchema.parse(input);
+    const validatedData = DeleteReceiptSchema.parse(data);
 
     // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
     if (!user) {
-      throw new Error("User not found");
+      return { success: false, error: "User not found" };
     }
 
-    // Update receipt
-    const result = await DatabaseService.updateReceipt(
-      validatedInput.receiptId,
-      user.id,
-      validatedInput.data
-    );
+    // Check if receipt belongs to user
+    const receipt = await prisma.receipt.findFirst({
+      where: {
+        id: validatedData.receiptId,
+        userId: user.id,
+      },
+    });
 
-    // Revalidate relevant pages
+    if (!receipt) {
+      return { success: false, error: "Receipt not found" };
+    }
+
+    // Delete receipt (cascade will handle related records)
+    await prisma.receipt.delete({
+      where: { id: validatedData.receiptId },
+    });
+
+    // Revalidate cache
     revalidatePath("/dashboard");
     revalidatePath("/history");
 
-    return {
-      success: true,
-      data: result,
-      message: "Receipt updated successfully",
-    };
+    logger.info("Receipt deleted successfully", { userId, receiptId: validatedData.receiptId });
+
+    return { success: true };
+
   } catch (error) {
-    const { userId } = await auth();
-    logger.error("Update receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined, receiptId: input.receiptId });
+    logger.error("Error deleting receipt", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: `Validation error: ${error.errors.map(e => e.message).join(", ")}`,
-      };
+      return { success: false, error: `Validation error: ${error.errors.map(e => e.message).join(", ")}` };
     }
     
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
     
-    return {
-      success: false,
-      error: "Failed to update receipt",
-    };
+    return { success: false, error: "Failed to delete receipt" };
   }
 }
 
 /**
- * Delete a receipt
+ * Get user's emissions statistics
  */
-export async function deleteReceipt(input: z.infer<typeof DeleteReceiptSchema>) {
+export async function getUserEmissionsStats(): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     // Authenticate user
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Validate input
-    const validatedInput = DeleteReceiptSchema.parse(input);
-
-    // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Delete receipt
-    const result = await DatabaseService.deleteReceipt(
-      validatedInput.receiptId,
-      user.id
-    );
-
-    // Revalidate relevant pages
-    revalidatePath("/dashboard");
-    revalidatePath("/history");
-
-    return {
-      success: true,
-      data: result,
-      message: "Receipt deleted successfully",
-    };
-  } catch (error) {
-    const { userId } = await auth();
-    logger.error("Delete receipt error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined, receiptId: input.receiptId });
-    
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: `Validation error: ${error.errors.map(e => e.message).join(", ")}`,
-      };
-    }
-    
-    if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-    
-    return {
-      success: false,
-      error: "Failed to delete receipt",
-    };
-  }
-}
-
-/**
- * Get emissions summary for the authenticated user
- */
-export async function getEmissionsSummary() {
-  try {
-    // Authenticate user
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized" };
     }
 
     // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
     if (!user) {
-      throw new Error("User not found");
+      return { success: false, error: "User not found" };
     }
 
-    // Get emissions summary
-    const summary = await DatabaseService.getEmissionsSummary(user.id);
+    // Get emissions statistics
+    const [totalEmissions, totalReceipts, monthlyEmissions, categoryBreakdown] = await Promise.all([
+      // Total emissions
+      prisma.receipt.aggregate({
+        where: { userId: user.id },
+        _sum: { totalCarbonEmissions: true },
+      }),
+      
+      // Total receipts
+      prisma.receipt.count({
+        where: { userId: user.id },
+      }),
+      
+      // Monthly emissions (last 12 months)
+      prisma.receipt.findMany({
+        where: {
+          userId: user.id,
+          date: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1),
+          },
+        },
+        select: { 
+          date: true,
+          totalCarbonEmissions: true,
+        },
+        orderBy: { date: "asc" },
+      }),
+      
+      // Category breakdown
+      prisma.receiptItem.findMany({
+        where: { 
+          receipt: { userId: user.id }
+        },
+        select: { 
+          category: true,
+          carbonEmissions: true,
+          name: true,
+        },
+      }),
+    ]);
+
+    // Process monthly data
+    const monthlyData = Array.from({ length: 12 }, (_, i) => {
+      const month = new Date(new Date().getFullYear(), new Date().getMonth() - 11 + i, 1);
+      const monthEmissions = monthlyEmissions.filter(receipt => {
+        const receiptMonth = new Date(receipt.date);
+        return receiptMonth.getMonth() === month.getMonth() && 
+               receiptMonth.getFullYear() === month.getFullYear();
+      });
+      
+      return {
+        month: month.toISOString().slice(0, 7), // YYYY-MM format
+        emissions: monthEmissions.reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0),
+        receipts: monthEmissions.length,
+      };
+    });
+
+    // Process category breakdown
+    const categoryStats: Record<string, { count: number; totalEmissions: number; items: string[] }> = {};
+    categoryBreakdown.forEach(item => {
+      const category = item.category || 'Unknown';
+      const emissions = Number(item.carbonEmissions || 0);
+      
+      if (!categoryStats[category]) {
+        categoryStats[category] = { count: 0, totalEmissions: 0, items: [] };
+      }
+      
+      categoryStats[category].count += 1;
+      categoryStats[category].totalEmissions += emissions;
+      categoryStats[category].items.push(item.name);
+    });
 
     return {
       success: true,
-      data: summary,
+      data: {
+        totalEmissions: Number(totalEmissions._sum.totalCarbonEmissions || 0),
+        totalReceipts,
+        monthlyData,
+        categoryBreakdown: categoryStats,
+        averageEmissionsPerReceipt: totalReceipts > 0 ? Number(totalEmissions._sum.totalCarbonEmissions || 0) / totalReceipts : 0,
+      },
     };
+
   } catch (error) {
-    const { userId } = await auth();
-    logger.error("Get emissions summary error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
+    logger.error("Error getting emissions stats", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
     
-    return {
-      success: false,
-      error: "Failed to fetch emissions summary",
-    };
-  }
-}
-
-/**
- * Get analytics for the authenticated user
- */
-export async function getAnalytics() {
-  try {
-    // Authenticate user
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Get user from database
-    const user = await DatabaseService.getUserByClerkId(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Get analytics
-    const analytics = await DatabaseService.getAnalytics(user.id);
-
-    return {
-      success: true,
-      data: analytics,
-    };
-  } catch (error) {
-    const { userId } = await auth();
-    logger.error("Get analytics error", error instanceof Error ? error : new Error(String(error)), { userId: userId || undefined });
-    
-    if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-    
-    return {
-      success: false,
-      error: "Failed to fetch analytics",
-    };
+    return { success: false, error: "Failed to get emissions statistics" };
   }
 } 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { serializePrismaResult } from '@/lib/utils/prisma-serializer';
 
 const ProfileUpdateSchema = z.object({
   firstName: z.string().optional(),
@@ -37,7 +38,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      user: {
+      user: serializePrismaResult({
         id: user.id,
         clerkId: user.clerkId,
         email: user.email,
@@ -48,7 +49,7 @@ export async function PATCH(request: NextRequest) {
         location: user.location,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-      },
+      }),
     });
 
   } catch (error) {

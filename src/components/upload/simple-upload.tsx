@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Upload, X, FileImage, CheckCircle, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { UploadDropzone } from '@/lib/providers/uploadthing';
-import { processReceipt } from '@/lib/actions/receipts';
+import { processReceiptImage } from '@/lib/actions/receipts';
 import { useToast } from '@/components/ui/use-toast';
 import type { OurFileRouter } from "@/lib/uploadthing";
 
@@ -61,16 +61,16 @@ export function SimpleUpload() {
     setError(null);
     
     try {
-      const result = await processReceipt({
+      const result = await processReceiptImage({
         imageUrl: uploadedFile.url,
         fileName: uploadedFile.name,
-        fileType: uploadedFile.type,
+        imageType: uploadedFile.type,
       });
 
       if (result.success) {
         toast({
           title: "Receipt processed successfully",
-          description: `Found ${result.data?.items?.length || 0} items with ${result.data?.emissionsLog?.totalCO2?.toFixed(2) || 0} kg CO2e emissions.`,
+          description: `Found ${result.data?.items?.length || 0} items with ${result.data?.emissionsPerReceipt?.totalCO2?.toFixed(2) || 0} kg CO2e emissions.`,
         });
         
         // Navigate to dashboard to see the new receipt

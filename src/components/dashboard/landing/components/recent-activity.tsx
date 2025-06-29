@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Receipt, Calendar, Store, Leaf } from 'lucide-react';
 
-// TODO: Replace with actual data from backend API calls
-const mockRecentActivity = [
+// Fallback data when no real data is available
+const getFallbackData = () => [
   {
     id: '1',
     merchant: 'Walmart',
@@ -45,10 +45,24 @@ const mockRecentActivity = [
 ];
 
 interface RecentActivityProps {
-  data?: typeof mockRecentActivity;
+  receipts?: any;
+  highlightedReceiptId?: string;
 }
 
-export function RecentActivity({ data = mockRecentActivity }: RecentActivityProps) {
+export function RecentActivity({ receipts, highlightedReceiptId }: RecentActivityProps) {
+  // Use real data if available, otherwise fallback to mock data
+  const data = receipts?.data?.receipts ? 
+    receipts.data.receipts.map((receipt: any) => ({
+      id: receipt.id,
+      merchant: receipt.merchant,
+      date: receipt.date,
+      total: Number(receipt.total),
+      emissions: receipt.emissionsLog ? Number(receipt.emissionsLog.totalCO2) : 0,
+      items: receipt.receiptItems?.length || 0,
+      status: 'processed'
+    })) : 
+    getFallbackData();
+
   if (data.length === 0) {
     return (
       <Card className="bg-background/50 backdrop-blur-[24px] border-border">
@@ -74,8 +88,15 @@ export function RecentActivity({ data = mockRecentActivity }: RecentActivityProp
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {data.map((activity) => (
-            <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+          {data.map((activity: any) => (
+            <div 
+              key={activity.id} 
+              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                activity.id === highlightedReceiptId 
+                  ? 'border-green-500 bg-green-500/10 hover:bg-green-500/20' 
+                  : 'border-border/50 hover:bg-muted/50'
+              }`}
+            >
               <div className="flex items-center space-x-3">
                 <div className="p-2 rounded-full bg-primary/10">
                   <Receipt className="h-4 w-4 text-primary" />
@@ -98,7 +119,7 @@ export function RecentActivity({ data = mockRecentActivity }: RecentActivityProp
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-1">
                   <Leaf className="h-3 w-3 text-green-600" />
-                  <span className="font-medium text-green-600">{activity.emissions} kg</span>
+                  <span className="font-medium text-green-600">{activity.emissions.toFixed(1)} kg</span>
                 </div>
                 <Badge 
                   variant={activity.status === 'processed' ? 'default' : 'secondary'}

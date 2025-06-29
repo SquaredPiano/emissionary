@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { serializePrismaResult } from '@/lib/utils/prisma-serializer';
 
 const UserSyncSchema = z.object({
   clerkId: z.string(),
@@ -65,13 +66,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      user: {
+      user: serializePrismaResult({
         id: user.id,
         clerkId: user.clerkId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-      },
+        avatar: user.avatar,
+        bio: user.bio,
+        location: user.location,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }),
     });
 
   } catch (error) {
@@ -108,7 +114,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      user: {
+      user: serializePrismaResult({
         id: user.id,
         clerkId: user.clerkId,
         email: user.email,
@@ -119,7 +125,7 @@ export async function GET() {
         location: user.location,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-      },
+      }),
     });
 
   } catch (error) {

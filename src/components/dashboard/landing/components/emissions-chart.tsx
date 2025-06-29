@@ -3,8 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// TODO: Replace with actual data from backend API calls
-const mockEmissionsData = [
+// Fallback data when no real data is available
+const getFallbackData = () => [
   { date: 'Mon', emissions: 2.1 },
   { date: 'Tue', emissions: 1.8 },
   { date: 'Wed', emissions: 3.2 },
@@ -15,10 +15,18 @@ const mockEmissionsData = [
 ];
 
 interface EmissionsChartProps {
-  data?: typeof mockEmissionsData;
+  emissions?: any;
 }
 
-export function EmissionsChart({ data = mockEmissionsData }: EmissionsChartProps) {
+export function EmissionsChart({ emissions }: EmissionsChartProps) {
+  // Use real data if available, otherwise fallback to mock data
+  const data = emissions?.data?.monthlyData ? 
+    emissions.data.monthlyData.slice(-7).map((item: any) => ({
+      date: new Date(item.month).toLocaleDateString('en-US', { weekday: 'short' }),
+      emissions: item.emissions
+    })) : 
+    getFallbackData();
+
   if (data.length === 0) {
     return (
       <Card className="bg-background/50 backdrop-blur-[24px] border-border">

@@ -28,8 +28,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  receipts     Receipt[]
-  emissionsLogs EmissionsLog[]
+  receipts Receipt[]
 
   @@map("users")
 }
@@ -46,13 +45,13 @@ model Receipt {
   tipAmount   Decimal? @default(0)
   paymentMethod String?
   receiptNumber String?
+  totalCarbonEmissions Decimal @default(0) // Total carbon emissions for this receipt
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   receiptItems ReceiptItem[]
-  emissionsLog EmissionsLog?
 
   @@map("receipts")
 }
@@ -68,6 +67,8 @@ model ReceiptItem {
   brand       String?
   barcode     String?
   description String?
+  carbonEmissions Decimal @default(0) // Carbon emissions in kg CO2e
+  confidence  Decimal @default(0.8)   // OCR confidence score
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -75,22 +76,4 @@ model ReceiptItem {
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@map("receipt_items")
-}
-
-model EmissionsLog {
-  id         String   @id @default(cuid())
-  receiptId  String   @unique
-  userId     String
-  totalCO2   Decimal
-  breakdown  Json     // Store emission breakdown by category
-  calculationMethod String? // Method used for calculation
-  carbonIntensity   Decimal? // Carbon intensity factor used
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("emissions_logs")
 }

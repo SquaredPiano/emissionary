@@ -38,7 +38,6 @@ export class OCRService {
       const payload = {
         image: base64Image,
         image_type: imageType,
-        user_id: userId,
       };
 
       logger.info("Processing receipt through OCR service", { userId, imageType, bufferSize: imageBuffer.length });
@@ -80,15 +79,11 @@ export class OCRService {
         throw new Error(validatedResult.error_message || "OCR processing failed");
       }
 
-      if (validatedResult.confidence < 0.1) {
-        logger.warn("Low OCR confidence", { userId, confidence: validatedResult.confidence });
-      }
-
       logger.info("OCR processing completed successfully", { 
         userId, 
-        confidence: validatedResult.confidence,
         itemsCount: validatedResult.items?.length || 0,
-        processingTime: validatedResult.processing_time
+        processingTime: validatedResult.processing_time,
+        totalCarbonEmissions: validatedResult.total_carbon_emissions,
       });
 
       return validatedResult;
@@ -204,14 +199,11 @@ export class OCRService {
       }
 
       const healthData = await response.json();
-      logger.info("OCR health check data", { healthData });
+      logger.info("OCR health check successful", { healthData });
       
-      const isHealthy = healthData.status === "healthy";
-      logger.info("OCR service health status", { isHealthy, status: healthData.status });
-      
-      return isHealthy;
+      return healthData.status === "healthy";
     } catch (error) {
-      logger.error("OCR health check failed", error instanceof Error ? error : new Error(String(error)), { 
+      logger.error("OCR health check error", error instanceof Error ? error : new Error(String(error)), { 
         url: this.OCR_SERVICE_URL 
       });
       return false;
@@ -219,17 +211,20 @@ export class OCRService {
   }
 
   /**
-   * Transform OCR items to database format
+   * Transform OCR items to receipt items format
    */
   static transformOCRItemsToReceiptItems(ocrItems: OCRItem[]) {
-    return ocrItems.map((item) => ({
+    return ocrItems.map(item => ({
       name: item.name,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice || 0,
-      totalPrice: item.totalPrice || item.quantity * (item.unitPrice || 0),
-      category: item.category || "unknown",
-      brand: item.brand,
-      description: item.name, // Use name as description for now
+      quantity: item.quantity || 1,
+      unitPrice: item.unit_price || 0,
+      totalPrice: item.total_price || 0,
+      category: item.category || 'processed',
+      brand: undefined,
+      barcode: undefined,
+      description: undefined,
+      carbonEmissions: item.carbon_emissions || 0,
+      confidence: item.confidence || 0.8,
     }));
   }
 
@@ -238,7 +233,7 @@ export class OCRService {
    */
   static calculateTotalEmissions(ocrItems: OCRItem[]): number {
     return ocrItems.reduce((total, item) => {
-      return total + (item.carbonEmissions || 0);
+      return total + (item.carbon_emissions || 0);
     }, 0);
   }
 
@@ -246,41 +241,38 @@ export class OCRService {
    * Create emissions breakdown by category
    */
   static createEmissionsBreakdown(ocrItems: OCRItem[]) {
-    const breakdown: Record<string, number> = {};
+    const breakdown: Record<string, { count: number; totalEmissions: number; items: string[] }> = {};
     
-    ocrItems.forEach((item) => {
-      const category = item.category || "unknown";
-      const emissions = item.carbonEmissions || 0;
+    ocrItems.forEach(item => {
+      const category = item.category || 'Unknown';
+      const emissions = item.carbon_emissions || 0;
       
-      if (breakdown[category]) {
-        breakdown[category] += emissions;
-      } else {
-        breakdown[category] = emissions;
+      if (!breakdown[category]) {
+        breakdown[category] = { count: 0, totalEmissions: 0, items: [] };
       }
+      
+      breakdown[category].count += 1;
+      breakdown[category].totalEmissions += emissions;
+      breakdown[category].items.push(item.name);
     });
     
     return breakdown;
   }
 
   /**
-   * Validate and clean OCR results
+   * Validate OCR results
    */
   static validateOCRResults(ocrResponse: OCRResponse): OCRResponse {
-    // Ensure items have required fields
+    // Ensure all required fields are present
+    if (!ocrResponse.success) {
+      throw new Error(ocrResponse.error_message || "OCR processing failed");
+    }
+
+    // Validate items if present
     if (ocrResponse.items) {
-      ocrResponse.items = ocrResponse.items.filter((item) => {
-        return item.name && item.name.trim().length > 0 && item.quantity > 0;
-      });
-    }
-
-    // Ensure total is positive
-    if (ocrResponse.total && ocrResponse.total < 0) {
-      ocrResponse.total = 0;
-    }
-
-    // Ensure total emissions is positive
-    if (ocrResponse.total_carbon_emissions && ocrResponse.total_carbon_emissions < 0) {
-      ocrResponse.total_carbon_emissions = 0;
+      ocrResponse.items = ocrResponse.items.filter(item => 
+        item.name && item.name.trim().length > 0
+      );
     }
 
     return ocrResponse;

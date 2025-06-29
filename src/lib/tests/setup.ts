@@ -34,7 +34,7 @@ jest.mock('@clerk/nextjs/server', () => ({
 export const testDatabase = {
   async clean() {
     // Clean all tables in test database
-    const tables = ['emissions_logs', 'receipt_items', 'receipts', 'users'];
+    const tables = ['receipt_items', 'receipts', 'users'];
     
     for (const table of tables) {
       await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE;`);
@@ -59,6 +59,7 @@ export const testDatabase = {
         total: 25.99,
         date: new Date(),
         currency: 'USD',
+        totalCarbonEmissions: 5.2,
       },
     });
 
@@ -89,6 +90,7 @@ export const testUtils = {
       total: 25.99,
       date: new Date(),
       currency: 'USD',
+      totalCarbonEmissions: 5.2,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -103,19 +105,8 @@ export const testUtils = {
       unitPrice: 12.99,
       totalPrice: 25.98,
       category: 'groceries',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  },
-
-  generateMockEmissionsLog(receiptId: string, userId: string) {
-    return {
-      id: 'test-emissions-id',
-      receiptId,
-      userId,
-      totalCO2: 5.2,
-      breakdown: { groceries: 5.2 },
-      calculationMethod: 'basic',
+      carbonEmissions: 2.6,
+      confidence: 0.9,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

@@ -1,6 +1,8 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
+import { processReceiptImage } from "@/lib/actions/receipts";
+import { logger } from "@/lib/logger";
 
 const f = createUploadthing();
 
@@ -40,22 +42,89 @@ export const uploadRouter = {
       return { userId };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      // Validate file
-      const validatedFile = fileSchema.parse({
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
+      try {
+        // Validate file
+        const validatedFile = fileSchema.parse({
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
 
-      // Return file info for client
-      return {
-        uploadedBy: metadata.userId,
-        url: file.url,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        key: file.key
-      };
+        logger.info("File uploaded successfully", { 
+          userId: metadata.userId, 
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type 
+        });
+
+        // Process receipt through OCR
+        const ocrResult = await processReceiptImage({
+          imageUrl: file.url,
+          imageType: file.type,
+          fileName: file.name,
+        });
+
+        if (!ocrResult.success) {
+          logger.error("OCR processing failed after upload", undefined, { 
+            userId: metadata.userId, 
+            error: ocrResult.error,
+            fileName: file.name 
+          });
+          
+          // Return file info but with OCR error
+          return {
+            uploadedBy: metadata.userId,
+            url: file.url,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            key: file.key,
+            ocrSuccess: false,
+            ocrError: ocrResult.error,
+          };
+        }
+
+        logger.info("Receipt processed successfully after upload", { 
+          userId: metadata.userId, 
+          fileName: file.name,
+          receiptId: ocrResult.data?.receiptId,
+          totalEmissions: ocrResult.data?.totalEmissions,
+          itemsCount: ocrResult.data?.itemsCount
+        });
+
+        // Return file info with OCR results
+        return {
+          uploadedBy: metadata.userId,
+          url: file.url,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          key: file.key,
+          ocrSuccess: true,
+          receiptId: ocrResult.data?.receiptId,
+          totalEmissions: ocrResult.data?.totalEmissions,
+          itemsCount: ocrResult.data?.itemsCount,
+          ocrResult: ocrResult.data?.ocrResult,
+        };
+
+      } catch (error) {
+        logger.error("Error in upload complete handler", error instanceof Error ? error : new Error(String(error)), { 
+          userId: metadata.userId,
+          fileName: file.name 
+        });
+
+        // Return file info but with error
+        return {
+          uploadedBy: metadata.userId,
+          url: file.url,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          key: file.key,
+          ocrSuccess: false,
+          ocrError: error instanceof Error ? error.message : "Unknown error occurred",
+        };
+      }
     }),
 } satisfies FileRouter;
 

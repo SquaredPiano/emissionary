@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { OCRService } from '@/lib/services/ocr';
 import { OCRResponseSchema } from '@/lib/schemas';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // Request validation schema
 const OCRRequestSchema = z.object({
@@ -26,6 +27,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedBody = OCRRequestSchema.parse(body);
 
+    logger.info("OCR API request received", { 
+      userId, 
+      imageType: validatedBody.image_type,
+      imageSize: validatedBody.image.length 
+    });
+
     // Convert base64 to buffer
     const imageBuffer = Buffer.from(validatedBody.image, 'base64');
 
@@ -39,13 +46,21 @@ export async function POST(request: NextRequest) {
     // Validate OCR response
     const validatedResult = OCRResponseSchema.parse(ocrResult);
 
+    logger.info("OCR API processing completed", { 
+      userId, 
+      success: validatedResult.success,
+      itemsCount: validatedResult.items?.length || 0,
+      totalEmissions: validatedResult.total_carbon_emissions,
+      processingTime: validatedResult.processing_time
+    });
+
     return NextResponse.json({
       success: true,
       data: validatedResult,
     });
 
   } catch (error) {
-    console.error('OCR API error:', error);
+    logger.error("OCR API error", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -103,12 +118,12 @@ export async function GET() {
       success: true,
       data: {
         status: isHealthy ? 'healthy' : 'unhealthy',
-        service: 'OCR-PaddleOCR',
+        service: 'OCR-Pytesseract',
         timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error('OCR health check error:', error);
+    logger.error("OCR health check error", error instanceof Error ? error : new Error(String(error)));
     
     return NextResponse.json(
       { 
@@ -116,7 +131,7 @@ export async function GET() {
         error: 'Health check failed',
         data: {
           status: 'unhealthy',
-          service: 'OCR-PaddleOCR',
+          service: 'OCR-Pytesseract',
           timestamp: new Date().toISOString(),
         }
       },

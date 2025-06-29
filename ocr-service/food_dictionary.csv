@@ -1,0 +1,37 @@
+name,canonical,category,emissions_kg_per_kg
+Spaghetti,Pasta,Grains,1.8
+Carrots,Carrots,Produce,0.3
+Drumsticks,Chicken,Meat,6.9
+Red Onions,Onion,Produce,0.5
+Squash Zucchini,Zucchini,Produce,0.4
+Yeast,Yeast,Other,1.2
+Tomato,Tomato,Produce,0.4
+Milk,Milk,Dairy,3.2
+Eggs,Eggs,Dairy,4.8
+Potatoes,Potato,Produce,0.2
+Bread,Bread,Grains,1.1
+Rice,Rice,Grains,2.7
+Bananas,Banana,Produce,0.6
+Apples,Apple,Produce,0.4
+Beef,Beef,Meat,27.0
+Pork,Pork,Meat,12.1
+Fish,Fish,Meat,6.1
+Cheese,Cheese,Dairy,13.5
+Butter,Butter,Dairy,12.1
+Lettuce,Lettuce,Produce,0.2
+Cucumber,Cucumber,Produce,0.3
+Orange,Orange,Produce,0.5
+Grapes,Grapes,Produce,0.6
+Chicken,Chicken,Meat,6.9
+Yogurt,Yogurt,Dairy,2.2
+Cereal,Cereal,Grains,1.2
+Oats,Oats,Grains,1.0
+Beans,Beans,Produce,0.8
+Lentils,Lentils,Produce,0.9
+Sugar,Sugar,Other,1.7
+Salt,Salt,Other,0.1
+Oil,Oil,Other,3.3
+Butter,Butter,Dairy,12.1
+Eggs,Eggs,Dairy,4.8
+Onion,Onion,Produce,0.5
+Zucchini,Zucchini,Produce,0.4 

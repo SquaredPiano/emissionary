@@ -1,9 +1,9 @@
 // Database types for the Emissionary application
 // Re-export Prisma types for convenience
 
-import type { User, Receipt, ReceiptItem, EmissionsLog } from '../../generated/prisma';
+import type { User, Receipt, ReceiptItem } from '../../generated/prisma';
 
-export type { User, Receipt, ReceiptItem, EmissionsLog };
+export type { User, Receipt, ReceiptItem };
 
 // Extended types for API responses and dashboard data
 export interface EmissionsBreakdown {
@@ -20,12 +20,10 @@ export interface EmissionsBreakdown {
 
 export interface ReceiptWithItems extends Receipt {
   receiptItems: ReceiptItem[];
-  emissionsLog?: EmissionsLog;
 }
 
 export interface UserWithReceipts extends User {
   receipts: ReceiptWithItems[];
-  emissionsLogs: EmissionsLog[];
 }
 
 // API Response types

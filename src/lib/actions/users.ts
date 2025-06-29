@@ -46,19 +46,13 @@ export async function getCurrentUser() {
       
       return {
         success: true,
-        data: {
-          ...newUser,
-          clerkUser,
-        },
+        data: newUser,
       };
     }
 
     return {
       success: true,
-      data: {
-        ...dbUser,
-        clerkUser,
-      },
+      data: dbUser,
     };
   } catch (error) {
     const { userId } = await auth();

@@ -3,12 +3,10 @@ import { logger } from "@/lib/logger";
 import { 
   CreateReceiptSchema, 
   CreateReceiptItemSchema, 
-  CreateEmissionsLogSchema,
   PaginationSchema,
   ReceiptFilterSchema,
   type CreateReceipt,
   type CreateReceiptItem,
-  type CreateEmissionsLog,
   type Pagination,
   type ReceiptFilter
 } from "@/lib/schemas";
@@ -24,7 +22,6 @@ export class DatabaseService {
           receipts: {
             include: {
               receiptItems: true,
-              emissionsLog: true,
             },
             orderBy: { createdAt: "desc" },
           },
@@ -68,8 +65,7 @@ export class DatabaseService {
   static async createReceiptWithItems(
     userId: string,
     receiptData: CreateReceipt,
-    items: CreateReceiptItem[],
-    emissionsData?: CreateEmissionsLog
+    items: CreateReceiptItem[]
   ) {
     try {
       return await prisma.$transaction(async (tx) => {
@@ -103,24 +99,9 @@ export class DatabaseService {
           })
         );
 
-        // Create emissions log if provided
-        let emissionsLog = null;
-        if (emissionsData) {
-          const validatedEmissions = CreateEmissionsLogSchema.parse(emissionsData);
-          emissionsLog = await tx.emissionsLog.create({
-            data: {
-              ...validatedEmissions,
-              receiptId: receipt.id,
-              userId,
-              totalCO2: validatedEmissions.totalCO2,
-            },
-          });
-        }
-
         return {
           receipt,
           items: receiptItems,
-          emissionsLog,
         };
       });
     } catch (error) {
@@ -138,7 +119,6 @@ export class DatabaseService {
         where: { id: receiptId, userId },
         include: {
           receiptItems: true,
-          emissionsLog: true,
         },
       });
     } catch (error) {
@@ -193,7 +173,6 @@ export class DatabaseService {
           where: whereClause,
           include: {
             receiptItems: true,
-            emissionsLog: true,
           },
           orderBy: {
             [validatedPagination.sortBy || "createdAt"]: validatedPagination.sortOrder,
@@ -241,67 +220,71 @@ export class DatabaseService {
     }
   }
 
-  // Emissions operations
+  // Emissions operations - now using totalCarbonEmissions from receipts
   static async getEmissionsByUser(userId: string, startDate?: Date, endDate?: Date) {
     try {
       const whereClause: any = { userId };
       
       if (startDate || endDate) {
-        whereClause.createdAt = {};
+        whereClause.date = {};
         if (startDate) {
-          whereClause.createdAt.gte = startDate;
+          whereClause.date.gte = startDate;
         }
         if (endDate) {
-          whereClause.createdAt.lte = endDate;
+          whereClause.date.lte = endDate;
         }
       }
 
-      const emissions = await prisma.emissionsLog.findMany({
+      const receipts = await prisma.receipt.findMany({
         where: whereClause,
-        include: {
-          receipt: {
-            include: {
-              receiptItems: true,
-            },
-          },
+        select: {
+          id: true,
+          totalCarbonEmissions: true,
+          date: true,
+          merchant: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { date: "desc" },
       });
 
-      return emissions;
+      return receipts;
     } catch (error) {
-      logger.error("Error fetching emissions", error instanceof Error ? error : new Error(String(error)), { userId });
+      logger.error("Error fetching emissions by user", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch emissions");
     }
   }
 
   static async getEmissionsSummary(userId: string) {
     try {
-      const emissions = await this.getEmissionsByUser(userId);
+      const receipts = await prisma.receipt.findMany({
+        where: { userId },
+        select: {
+          totalCarbonEmissions: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const totalEmissions = receipts.reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0);
+
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const totalEmissions = emissions.reduce((sum, emission) => sum + Number(emission.totalCO2), 0);
-      const averageEmissions = emissions.length > 0 ? totalEmissions / emissions.length : 0;
-      
-      // Calculate weekly and monthly averages
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
-      const weeklyEmissions = emissions
-        .filter(e => e.createdAt >= weekAgo)
-        .reduce((sum, emission) => sum + Number(emission.totalCO2), 0);
-      
-      const monthlyEmissions = emissions
-        .filter(e => e.createdAt >= monthAgo)
-        .reduce((sum, emission) => sum + Number(emission.totalCO2), 0);
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+      const weeklyEmissions = receipts
+        .filter(receipt => receipt.createdAt >= weekAgo)
+        .reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0);
+
+      const monthlyEmissions = receipts
+        .filter(receipt => receipt.createdAt >= monthAgo)
+        .reduce((sum, receipt) => sum + Number(receipt.totalCarbonEmissions), 0);
 
       return {
-        totalEmissions,
-        averageEmissions,
-        weeklyEmissions,
-        monthlyEmissions,
-        totalReceipts: emissions.length,
-        emissions,
+        total: totalEmissions,
+        weekly: weeklyEmissions,
+        monthly: monthlyEmissions,
+        count: receipts.length,
       };
     } catch (error) {
       logger.error("Error fetching emissions summary", error instanceof Error ? error : new Error(String(error)), { userId });
@@ -315,24 +298,34 @@ export class DatabaseService {
         where: { userId },
         include: {
           receiptItems: true,
-          emissionsLog: true,
         },
         orderBy: { createdAt: "desc" },
       });
 
-      const totalReceipts = receipts.length;
+      // Calculate total emissions from receipts
       const totalEmissions = receipts.reduce((sum, receipt) => {
-        return sum + (receipt.emissionsLog ? Number(receipt.emissionsLog.totalCO2) : 0);
+        return sum + Number(receipt.totalCarbonEmissions);
       }, 0);
-      
-      const averageReceiptValue = receipts.length > 0 
-        ? receipts.reduce((sum, receipt) => sum + Number(receipt.total), 0) / receipts.length 
-        : 0;
+
+      // Calculate emissions by category from receipt items
+      const categoryEmissions: Record<string, number> = {};
+      receipts.forEach(receipt => {
+        receipt.receiptItems.forEach(item => {
+          const category = item.category || 'Uncategorized';
+          const emissions = Number(item.carbonEmissions);
+          categoryEmissions[category] = (categoryEmissions[category] || 0) + emissions;
+        });
+      });
+
+      // Calculate average emissions per receipt
+      const averageEmissions = receipts.length > 0 ? totalEmissions / receipts.length : 0;
 
       return {
-        totalReceipts,
         totalEmissions,
-        averageReceiptValue,
+        averageEmissions,
+        categoryEmissions,
+        receiptCount: receipts.length,
+        itemCount: receipts.reduce((sum, receipt) => sum + receipt.receiptItems.length, 0),
       };
     } catch (error) {
       logger.error("Error fetching analytics", error instanceof Error ? error : new Error(String(error)), { userId });
