@@ -60,6 +60,7 @@ model Receipt {
   paymentMethod String?
   receiptNumber String?
   totalCarbonEmissions Decimal @default(0) // Total carbon emissions for this receipt
+  status      String   @default("processed") // Status: processed, processing, error, hidden
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

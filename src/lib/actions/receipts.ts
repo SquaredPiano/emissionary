@@ -41,6 +41,11 @@ const DeleteReceiptSchema = z.object({
   receiptId: z.string().cuid(),
 });
 
+const UpdateReceiptStatusSchema = z.object({
+  receiptId: z.string().cuid(),
+  status: z.enum(['processed', 'processing', 'error', 'hidden']),
+});
+
 /**
  * Process receipt image through OCR and save to database
  */
@@ -130,8 +135,8 @@ export async function processReceiptImage(
           items: [],
           totalEmissions: 0,
           itemsCount: 0,
-          processingSteps: processedData.processingSteps || [],
-          warnings: processedData.warnings || ["Processing failed, using fallback data"],
+          processingSteps: processedData.data?.processing_steps || [],
+          warnings: processedData.data?.warnings || ["Processing failed, using fallback data"],
         },
       };
     }
@@ -297,6 +302,13 @@ export async function getUserReceipts(
       return { success: false, error: "User not found" };
     }
 
+    logger.info("Fetching receipts for user", { 
+      userId: user.id, 
+      clerkId: userId,
+      page: validatedData.page,
+      limit: validatedData.limit 
+    });
+
     // Build where clause
     const where: any = { userId: user.id };
 
@@ -333,6 +345,22 @@ export async function getUserReceipts(
       }),
       prisma.receipt.count({ where }),
     ]);
+
+    // Log debugging information
+    logger.info("Receipts fetched", { 
+      userId: user.id,
+      totalReceipts: total,
+      fetchedReceipts: receipts.length,
+      totalEmissions: receipts.reduce((sum, r) => sum + Number(r.totalCarbonEmissions), 0),
+      receipts: receipts.map(r => ({
+        id: r.id,
+        merchant: r.merchant,
+        total: r.total,
+        emissions: r.totalCarbonEmissions,
+        status: r.status,
+        date: r.date
+      }))
+    });
 
     // Calculate pagination info
     const totalPages = Math.ceil(total / validatedData.limit);
@@ -430,6 +458,74 @@ export async function getReceiptById(
     }
     
     return { success: false, error: "Failed to get receipt" };
+  }
+}
+
+/**
+ * Update receipt status (hide/unhide)
+ */
+export async function updateReceiptStatus(
+  data: z.infer<typeof UpdateReceiptStatusSchema>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Authenticate user
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Validate input
+    const validatedData = UpdateReceiptStatusSchema.parse(data);
+
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Check if receipt belongs to user and update status
+    const receipt = await prisma.receipt.updateMany({
+      where: {
+        id: validatedData.receiptId,
+        userId: user.id,
+      },
+      data: {
+        status: validatedData.status,
+        updatedAt: new Date(),
+      },
+    });
+
+    if (receipt.count === 0) {
+      return { success: false, error: "Receipt not found" };
+    }
+
+    // Revalidate cache
+    revalidatePath("/dashboard");
+    revalidatePath("/history");
+
+    logger.info("Receipt status updated successfully", { 
+      userId, 
+      receiptId: validatedData.receiptId, 
+      status: validatedData.status 
+    });
+
+    return { success: true };
+
+  } catch (error) {
+    logger.error("Error updating receipt status", error instanceof Error ? error : new Error(String(error)));
+    
+    if (error instanceof z.ZodError) {
+      return { success: false, error: `Validation error: ${error.errors.map(e => e.message).join(", ")}` };
+    }
+    
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    
+    return { success: false, error: "Failed to update receipt status" };
   }
 }
 

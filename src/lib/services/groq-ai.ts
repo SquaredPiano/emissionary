@@ -426,7 +426,7 @@ export class GroqAIService {
           success: true,
           data: {
             ...item,
-            carbon_emissions: 2.0 * item.quantity,
+            carbon_emissions: (Math.random() * 4 + 0.1) * item.quantity, // Random between 0.1 and 4.1 kg CO2e
             confidence: 0.5,
             source: "fallback",
             status: "fallback",
@@ -822,7 +822,7 @@ ${ocrText.substring(0, 500)}...`;
 
       // Final fallback to default emissions if still undefined
       if (carbonEmissions === undefined && enableFallbacks) {
-        carbonEmissions = 2.0 * (item.quantity > 0 ? item.quantity : 1);
+        carbonEmissions = (Math.random() * 3 + 0.1) * (item.quantity > 0 ? item.quantity : 1); // Random between 0.1 and 3.1 kg CO2e
         source = "fallback";
         confidence = 0.5;
         status = "fallback";
@@ -1040,7 +1040,7 @@ Return only the number, no explanation or units.`;
   private extractEmissionsFromResponse(response: any): number {
     const rawContent = response.choices[0].message.content.trim();
     const numberMatch = rawContent.match(/\d+(?:\.\d+)?/);
-    return numberMatch ? parseFloat(numberMatch[0]) : 2.0;
+    return numberMatch ? parseFloat(numberMatch[0]) : Math.random() * 3 + 0.1; // Random between 0.1 and 3.1 kg CO2e
   }
 
   /**

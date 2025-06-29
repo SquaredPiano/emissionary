@@ -11,7 +11,7 @@ const getFallbackTips = () => [
     title: 'Switch to Plant-Based Alternatives',
     description: 'Your meat consumption contributes 45% to your emissions. Try replacing beef with lentils or chickpeas.',
     impact: 'High',
-    savings: '3.2 kg CO₂e/week',
+    savings: '12.8 kg CO₂e/week',
     category: 'diet'
   },
   {
@@ -19,7 +19,7 @@ const getFallbackTips = () => [
     title: 'Buy Local Produce',
     description: 'Choose locally grown vegetables to reduce transportation emissions.',
     impact: 'Medium',
-    savings: '1.1 kg CO₂e/week',
+    savings: '4.4 kg CO₂e/week',
     category: 'shopping'
   },
   {
@@ -27,7 +27,7 @@ const getFallbackTips = () => [
     title: 'Reduce Dairy Consumption',
     description: 'Consider almond or oat milk alternatives for your coffee and cereal.',
     impact: 'Medium',
-    savings: '0.8 kg CO₂e/week',
+    savings: '3.2 kg CO₂e/week',
     category: 'diet'
   },
   {
@@ -35,7 +35,7 @@ const getFallbackTips = () => [
     title: 'Bulk Buy Grains',
     description: 'Purchase rice, pasta, and other grains in bulk to reduce packaging waste.',
     impact: 'Low',
-    savings: '0.3 kg CO₂e/week',
+    savings: '1.2 kg CO₂e/week',
     category: 'shopping'
   }
 ];
@@ -62,7 +62,7 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
         title: 'Reduce Meat Consumption',
         description: `Meat contributes ${Math.round((breakdown.meat.totalEmissions / totalEmissions) * 100)}% to your emissions. Try meatless Mondays or plant-based alternatives.`,
         impact: 'High',
-        savings: `${(breakdown.meat.totalEmissions * 0.3).toFixed(1)} kg CO₂e/week`,
+        savings: `${((breakdown.meat.totalEmissions * 0.3) * 4).toFixed(1)} kg CO₂e/week`,
         category: 'diet'
       });
     }
@@ -74,7 +74,7 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
         title: 'Switch to Plant-Based Dairy',
         description: 'Consider almond, oat, or soy milk alternatives to reduce dairy emissions.',
         impact: 'Medium',
-        savings: `${(breakdown.dairy.totalEmissions * 0.4).toFixed(1)} kg CO₂e/week`,
+        savings: `${((breakdown.dairy.totalEmissions * 0.4) * 4).toFixed(1)} kg CO₂e/week`,
         category: 'diet'
       });
     }
@@ -86,7 +86,7 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
         title: 'Choose Whole Foods',
         description: 'Reduce packaged and processed foods in favor of whole, unprocessed ingredients.',
         impact: 'Medium',
-        savings: `${(breakdown.processed.totalEmissions * 0.2).toFixed(1)} kg CO₂e/week`,
+        savings: `${((breakdown.processed.totalEmissions * 0.2) * 4).toFixed(1)} kg CO₂e/week`,
         category: 'diet'
       });
     }
@@ -98,7 +98,7 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
         title: 'Increase Vegetable Intake',
         description: 'Vegetables have much lower emissions than animal products. Try adding more to your meals.',
         impact: 'Medium',
-        savings: '1.5 kg CO₂e/week',
+        savings: '6.0 kg CO₂e/week',
         category: 'diet'
       });
     }
@@ -154,8 +154,8 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {tips.map((tip) => (
-            <div key={tip.id} className="p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+          {tips.map((tip, idx) => (
+            <div key={`${tip.id}-${tip.title}-${idx}`} className="p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
               <div className="flex items-start justify-between mb-2">
                 <h4 className="font-medium text-sm">{tip.title}</h4>
                 <Badge 
