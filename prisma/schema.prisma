@@ -67,8 +67,8 @@ model ReceiptItem {
   brand       String?
   barcode     String?
   description String?
-  carbonEmissions Decimal? @db.Decimal(10, 4) // kg CO2e
-  confidence  Decimal? @db.Decimal(1, 2) // OCR confidence 0-1
+  carbonEmissions Decimal?
+  confidence  Decimal?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -76,22 +76,4 @@ model ReceiptItem {
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@map("receipt_items")
-}
-
-model EmissionsLog {
-  id         String   @id @default(cuid())
-  receiptId  String   @unique
-  userId     String
-  totalCO2   Decimal
-  breakdown  Json     // Store emission breakdown by category
-  calculationMethod String? // Method used for calculation
-  carbonIntensity   Decimal? // Carbon intensity factor used
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("emissions_logs")
 }
