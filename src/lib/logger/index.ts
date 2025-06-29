@@ -145,11 +145,20 @@ class Logger {
   }
 
   private getPerformanceMetrics() {
-    const memUsage = process.memoryUsage();
+    // Only use process.memoryUsage if available (Node.js only)
+    if (typeof process !== 'undefined' && typeof process.memoryUsage === 'function') {
+      const memUsage = process.memoryUsage();
+      return {
+        duration: 0, // Would be calculated from request start
+        memory: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+        cpu: 0, // Would be calculated from process.cpuUsage()
+      };
+    }
+    // Fallback for browser or unsupported environments
     return {
-      duration: 0, // Would be calculated from request start
-      memory: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
-      cpu: 0, // Would be calculated from process.cpuUsage()
+      duration: 0,
+      memory: 0,
+      cpu: 0,
     };
   }
 
