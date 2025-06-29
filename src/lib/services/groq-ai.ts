@@ -1,5 +1,9 @@
 import { logger } from "@/lib/logger";
 import { z } from "zod";
+import fs from 'fs';
+import path from 'path';
+import { loadFoodDataset, searchFoodByName, getEmissionsByName, getAllFoods } from '@/lib/data/food-dataset';
+import axios from 'axios';
 
 /**
  * Groq AI Service Configuration Interface
@@ -51,6 +55,7 @@ export interface ParsedFoodItem {
   readonly carbon_emissions?: number;
   readonly confidence: number;
   readonly source: string;
+  readonly status: string;
 }
 
 /**
@@ -122,6 +127,140 @@ const GroqAIResponseSchema = z.object({
   merchant: z.string().optional(),
   total: z.number().optional(),
 });
+
+const DEBUG_DIR = path.join(process.cwd(), 'groq-debug-outputs');
+if (!fs.existsSync(DEBUG_DIR)) fs.mkdirSync(DEBUG_DIR);
+
+function saveGroqDebug(inputText: string, output: string, suffix: string) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const txtPath = path.join(DEBUG_DIR, `groq_input_${suffix}_${timestamp}.txt`);
+  const outPath = path.join(DEBUG_DIR, `groq_output_${suffix}_${timestamp}.txt`);
+  fs.writeFileSync(txtPath, inputText);
+  fs.writeFileSync(outPath, output);
+}
+
+// Load dataset at startup
+loadFoodDataset();
+
+const EXTRACT_ITEMS_PROMPT = `You are an expert at reading grocery receipts. Given the following OCR text, extract every possible line that could be a food item, even if you are unsure. For each item, return a JSON object with:
+  - name: the item name as best as you can guess
+  - quantity: the quantity (default to 1 if not clear)
+  - total_price: the price for that line
+  - is_food: true if you think it is food, false otherwise (err on the side of true)
+  - category: guess the food category (produce, dairy, meat, bakery, snack, beverage, other)
+  - confidence: a number from 0 to 1 for how confident you are this is a food item
+Always return a JSON array of items, even if you are unsure.`;
+
+const ALLOWED_CATEGORIES = ["produce", "dairy", "meat", "bakery", "snack", "beverage", "other"];
+
+export async function extractItemsWithGroqAI(ocrText: string): Promise<ParsedFoodItem[]> {
+  const prompt = `${EXTRACT_ITEMS_PROMPT}\nOCR text:\n${ocrText}\n\nRemember: Only use these categories: produce, dairy, meat, bakery, snack, beverage, other.`;
+  try {
+    logger.info("Calling Groq AI for item extraction");
+    const response = await axios.post(
+      process.env.GROQ_API_URL || "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: process.env.GROQ_MODEL || "llama-3.1-70b-versatile",
+        messages: [
+          { role: "system", content: "You are an expert at reading grocery receipts." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 1200,
+        temperature: 0.1,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        timeout: 30000
+      }
+    );
+    const content = response.data.choices[0].message.content;
+    saveGroqDebug(prompt, content, 'extract');
+    let items: ParsedFoodItem[] = [];
+    try {
+      items = JSON.parse(content);
+    } catch (e) {
+      logger.error("Failed to parse Groq AI JSON response", e instanceof Error ? e : new Error(String(e)));
+      return [];
+    }
+    // Post-process: ensure only allowed categories
+    items = items.map(item => ({
+      ...item,
+      category: ALLOWED_CATEGORIES.includes(item.category) ? item.category : "other"
+    }));
+    logger.info(`Groq AI extracted ${items.length} items`);
+    return items;
+  } catch (error) {
+    logger.error("Groq AI item extraction failed", error instanceof Error ? error : new Error(String(error)));
+    return [];
+  }
+}
+
+const MATCH_DATASET_PROMPT = (itemName: string, foodList: string[]) => `Given the item name "${itemName}", does it match any of the following foods? [${foodList.join(', ')}]. If so, return the best match and a confidence score (0-1). If not, return null.`;
+
+export async function matchItemToDatasetWithGroqAI(itemName: string): Promise<{ match: string; confidence: number } | null> {
+  // Get all food names from the dataset
+  const foodList: string[] = getAllFoods().map((f: { food: string }) => f.food);
+  // Chunk the food list if too large for prompt (Groq has context limits)
+  const chunkSize = 50;
+  let bestMatch: { match: string; confidence: number } | null = null;
+  for (let i = 0; i < foodList.length; i += chunkSize) {
+    const chunk = foodList.slice(i, i + chunkSize);
+    const prompt = `Given the item name "${itemName}", does it match any of the following foods? [${chunk.join(', ')}]. If so, return the best match and a confidence score (0-1). If not, return null. Only return the name and confidence.`;
+    try {
+      logger.info(`Calling Groq AI for dataset match: chunk ${i / chunkSize + 1}`);
+      const response = await axios.post(
+        process.env.GROQ_API_URL || "https://api.groq.com/openai/v1/chat/completions",
+        {
+          model: process.env.GROQ_MODEL || "llama-3.1-70b-versatile",
+          messages: [
+            { role: "system", content: "You are an expert at matching food names." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 300,
+          temperature: 0.1,
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 20000
+        }
+      );
+      const content = response.data.choices[0].message.content;
+      saveGroqDebug(prompt, content, 'match');
+      let matchResult: { match: string; confidence: number } | null = null;
+      try {
+        matchResult = JSON.parse(content);
+      } catch (e) {
+        logger.error("Failed to parse Groq AI match JSON response", e instanceof Error ? e : new Error(String(e)));
+        continue;
+      }
+      if (matchResult && (!bestMatch || matchResult.confidence > bestMatch.confidence)) {
+        bestMatch = matchResult;
+      }
+    } catch (error) {
+      logger.error("Groq AI dataset match failed", error instanceof Error ? error : new Error(String(error)));
+      continue;
+    }
+  }
+  logger.info(`Best Groq AI dataset match: ${bestMatch ? bestMatch.match : 'none'} (confidence: ${bestMatch ? bestMatch.confidence : 0})`);
+  return bestMatch;
+}
+
+export function fallbackFuzzyMatch(itemName: string): FoodDatabaseItem | undefined {
+  const match = searchFoodByName(itemName, 1)[0];
+  if (!match) return undefined;
+  return {
+    name: match.food,
+    canonical: match.food.toLowerCase(),
+    category: match.category,
+    emissions: match.emissions,
+  };
+}
 
 /**
  * Groq AI Service Implementation
@@ -208,7 +347,10 @@ export class GroqAIService {
         };
       }
 
-      // Process items with fuzzy matching and fallbacks
+      // Extract merchant information
+      const merchant = await this.extractMerchant(ocrText, context);
+
+      // Process items with fuzzy matching, fallbacks, and emissions estimation
       const processedItems = await this.processItemsWithFallbacks(
         result.data || [],
         { enableFuzzyMatching, enableFallbacks },
@@ -220,6 +362,7 @@ export class GroqAIService {
       logger.info("Groq AI receipt parsing completed successfully", {
         ...context,
         itemsCount: processedItems.length,
+        merchant,
         processingTime,
         retryCount: result.retryCount,
       });
@@ -228,7 +371,7 @@ export class GroqAIService {
         success: true,
         data: {
           items: processedItems,
-          merchant: undefined,
+          merchant,
           total: undefined,
         },
         processingTime,
@@ -286,6 +429,7 @@ export class GroqAIService {
             carbon_emissions: 2.0 * item.quantity,
             confidence: 0.5,
             source: "fallback",
+            status: "fallback",
           },
           processingTime,
           retryCount: 0,
@@ -373,7 +517,7 @@ export class GroqAIService {
     
     const editDistance = this.levenshteinDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
-  }
+      }
 
   /**
    * Calculate Levenshtein distance between two strings
@@ -473,7 +617,7 @@ export class GroqAIService {
         
         if (attempt === this.config.maxRetries || !lastError.retryable) {
           throw lastError;
-        }
+      }
 
         logger.warn("Groq AI parsing attempt failed, retrying", {
           ...context,
@@ -569,7 +713,7 @@ export class GroqAIService {
 
     try {
       const prompt = this.buildEmissionsEstimationPrompt(item);
-      const response = await this.callGroqAI(prompt, 10000, 50);
+      const response = await this.callGroqAI(prompt, 10000, 200);
       
       const estimatedEmissions = this.extractEmissionsFromResponse(response);
       
@@ -578,9 +722,10 @@ export class GroqAIService {
         success: true,
         data: {
           ...item,
-          carbon_emissions: estimatedEmissions * item.quantity,
-          confidence: 0.7,
+          carbon_emissions: estimatedEmissions * (item.quantity > 0 ? item.quantity : 1),
+          confidence: 0.8,
           source: "groq_ai",
+          status: "ai_estimated",
         },
         processingTime,
         retryCount: 0,
@@ -596,10 +741,41 @@ export class GroqAIService {
         retryCount: 0,
       };
     }
+    }
+
+  /**
+   * Extract merchant information from receipt text
+   */
+  private async extractMerchant(ocrText: string, context: Record<string, any>): Promise<string | undefined> {
+    try {
+      const prompt = `Extract the merchant/store name from this receipt text. Look for store names, business names, or retailer information. Return only the merchant name, nothing else. If no clear merchant is found, return "Unknown Merchant".
+
+Receipt text:
+${ocrText.substring(0, 500)}...`;
+
+      const response = await this.callGroqAI(prompt, 10000, 100);
+      const merchant = response.choices[0].message.content.trim();
+      
+      // Clean up the response
+      const cleanMerchant = merchant.replace(/["']/g, '').trim();
+      
+      if (cleanMerchant && cleanMerchant !== "Unknown Merchant" && cleanMerchant.length > 2) {
+        logger.info("Merchant extracted successfully", { ...context, merchant: cleanMerchant });
+        return cleanMerchant;
+      }
+      
+      return "Unknown Merchant";
+    } catch (error) {
+      logger.warn("Failed to extract merchant", {
+        error: error instanceof Error ? error.message : String(error),
+        ...context,
+      });
+      return "Unknown Merchant";
+    }
   }
 
   /**
-   * Process items with fuzzy matching and fallbacks
+   * Process items with fuzzy matching, fallbacks, and emissions estimation
    */
   private async processItemsWithFallbacks(
     items: any[],
@@ -608,63 +784,114 @@ export class GroqAIService {
   ): Promise<ParsedFoodItem[]> {
     const { enableFuzzyMatching = true, enableFallbacks = true } = options;
     
-    return items.map((item) => {
+    const processedItems: ParsedFoodItem[] = [];
+    
+    for (const item of items) {
       let dbMatch: FoodDatabaseItem | null = null;
       
       if (enableFuzzyMatching) {
         dbMatch = this.matchWithDatabase(item.canonical_name || item.name);
       }
 
-      return {
+      let carbonEmissions = dbMatch 
+        ? dbMatch.emissions * (item.quantity > 0 ? item.quantity : 1)
+        : undefined;
+
+      let source = dbMatch ? "dataset" : "ai_estimation";
+      let confidence = dbMatch ? 1.0 : 0.7;
+      let status = dbMatch ? "processed" : "ai_estimated";
+
+      // If no database match and fallbacks are enabled, estimate emissions with Groq AI
+      if (!dbMatch && enableFallbacks && item.is_food !== false) {
+        try {
+          const emissionsResult = await this.estimateEmissionsWithGroqAI(item, context);
+          if (emissionsResult.success && emissionsResult.data) {
+            carbonEmissions = emissionsResult.data.carbon_emissions;
+            confidence = emissionsResult.data.confidence;
+            source = "groq_ai";
+            status = "ai_estimated";
+        }
+        } catch (error) {
+          logger.warn("Failed to estimate emissions with Groq AI", {
+            error: error instanceof Error ? error.message : String(error),
+            ...context,
+            itemName: item.name,
+          });
+      }
+    }
+
+      // Final fallback to default emissions if still undefined
+      if (carbonEmissions === undefined && enableFallbacks) {
+        carbonEmissions = 2.0 * (item.quantity > 0 ? item.quantity : 1);
+        source = "fallback";
+        confidence = 0.5;
+        status = "fallback";
+      }
+
+      processedItems.push({
         name: item.name || "Unknown Item",
         canonical_name: dbMatch ? dbMatch.canonical : (item.canonical_name || item.name || "unknown"),
         quantity: item.quantity > 0 ? item.quantity : 1,
         total_price: item.total_price >= 0 ? item.total_price : 0,
-        category: dbMatch ? dbMatch.category : (item.category || "unknown"),
+        category: dbMatch ? dbMatch.category : (item.category || "other"),
         is_food: typeof item.is_food === "boolean" ? item.is_food : true,
-        carbon_emissions: dbMatch 
-          ? dbMatch.emissions * (item.quantity > 0 ? item.quantity : 1)
-          : (enableFallbacks ? 2.0 * (item.quantity > 0 ? item.quantity : 1) : undefined),
-        confidence: dbMatch ? 1.0 : 0.7,
-        source: dbMatch ? "dataset" : "ai_estimation",
-      };
-    });
+        carbon_emissions: carbonEmissions,
+        confidence,
+        source,
+        status,
+      });
+    }
+    
+    return processedItems;
   }
 
   /**
    * Build receipt parsing prompt
    */
   private buildReceiptParsingPrompt(ocrText: string): string {
-    return `
-You are an expert at parsing grocery receipts. Given the following OCR text from a real grocery receipt, extract a JSON array of food items. 
-- Each item should have: name (as on receipt), canonical_name (standardized), quantity (default 1 if missing), total_price (default 0 if missing), category (guess if missing), is_food (true/false).
-- Ignore non-food items, totals, taxes, payment info, etc.
-- Be forgiving of typos, abbreviations, and OCR errors.
-- If unsure, make your best guess.
-- Return ONLY a JSON array of items, no explanations.
+    return `Parse this grocery receipt and extract food items. Return ONLY a JSON array of objects.
 
-OCR text:
-${ocrText}
-`;
+Each object should have:
+- name: cleaned food item name
+- quantity: number of items (default 1)
+- total_price: price in dollars
+- category: one of: produce, dairy, meat, bakery, snack, beverage, prepared_food, other
+- is_food: true
+
+Example output:
+[
+  {"name": "Milk", "quantity": 1, "total_price": 3.99, "category": "dairy", "is_food": true},
+  {"name": "Bread", "quantity": 2, "total_price": 4.50, "category": "bakery", "is_food": true}
+]
+
+Receipt text:
+${ocrText}`;
   }
 
   /**
    * Build emissions estimation prompt
    */
   private buildEmissionsEstimationPrompt(item: ParsedFoodItem): string {
-    return `Estimate the carbon emissions for this food item. Return only a number representing kg CO2e per kg of food.
+    return `Estimate the carbon emissions for this food item. Return ONLY a number representing kg CO2e per kg of food, to the nearest hundredth (e.g., 2.45).
 
 Food item: ${item.canonical_name}
 Category: ${item.category}
 
-Consider:
-- Meat products: 10-30 kg CO2e/kg
-- Dairy products: 1-5 kg CO2e/kg
+Consider these typical emissions ranges:
+- Meat products (beef, pork, lamb): 15-30 kg CO2e/kg
+- Poultry (chicken, turkey): 5-10 kg CO2e/kg
+- Fish and seafood: 3-8 kg CO2e/kg
+- Dairy products (milk, cheese, yogurt): 1-5 kg CO2e/kg
+- Eggs: 2-4 kg CO2e/kg
 - Vegetables: 0.1-1 kg CO2e/kg
+- Fruits: 0.1-0.5 kg CO2e/kg
+- Grains and bread: 0.5-2 kg CO2e/kg
 - Processed foods: 2-5 kg CO2e/kg
-- Grains: 0.5-2 kg CO2e/kg
+- Prepared foods (cooked, hot food): 3-8 kg CO2e/kg
+- Beverages: 0.5-2 kg CO2e/kg
+- Snacks: 1-4 kg CO2e/kg
 
-Return only the number, no explanation.`;
+Return only the number, no explanation or units.`;
   }
 
   /**
@@ -704,9 +931,11 @@ Return only the number, no explanation.`;
       if (!response.ok) {
       const errorText = await response.text();
       throw this.createServiceError(response.status, errorText);
-    }
+      }
 
-    return await response.json();
+    const groqOutput = await response.json();
+    saveGroqDebug(prompt, JSON.stringify(groqOutput), 'parse');
+    return groqOutput;
   }
 
   /**
@@ -717,14 +946,61 @@ Return only the number, no explanation.`;
     logger.debug("Groq AI raw response", { rawContent });
 
     try {
+      // Try to find JSON array in the response
       const jsonStart = rawContent.indexOf('[');
       const jsonEnd = rawContent.lastIndexOf(']');
       
       if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-        return JSON.parse(rawContent.substring(jsonStart, jsonEnd + 1));
-      } else {
-        throw new Error("No JSON array found in Groq AI response");
+        const jsonStr = rawContent.substring(jsonStart, jsonEnd + 1);
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
+      
+      // Try to find JSON object if array not found
+      const objStart = rawContent.indexOf('{');
+      const objEnd = rawContent.lastIndexOf('}');
+      
+      if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+        const jsonStr = rawContent.substring(objStart, objEnd + 1);
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.items && Array.isArray(parsed.items)) {
+          return parsed.items;
+        }
+        if (parsed.name) {
+          return [parsed];
+        }
+      }
+      
+      // Try to extract items from text format
+      const lines = rawContent.split('\n').filter(line => line.trim().length > 0);
+      const items: any[] = [];
+      
+      for (const line of lines) {
+        // Look for patterns like "name: value" or "name - value"
+        const nameMatch = line.match(/([^:]+):\s*(.+)/);
+        if (nameMatch) {
+          const name = nameMatch[1].trim();
+          const value = nameMatch[2].trim();
+          
+          if (name.toLowerCase().includes('name') && value.length > 0) {
+            items.push({
+              name: value,
+              quantity: 1,
+              total_price: 0,
+              category: 'other',
+              is_food: true
+            });
+          }
+        }
+      }
+      
+      if (items.length > 0) {
+        return items;
+      }
+      
+      throw new Error("No valid items found in Groq AI response");
     } catch (error) {
       logger.error("Failed to parse Groq AI JSON", error instanceof Error ? error : new Error(String(error)), { rawContent });
       

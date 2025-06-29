@@ -60,7 +60,7 @@ class Logger {
 
   private constructor() {
     this.logLevel = this.getLogLevelFromEnv();
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = this.getEnvironment() === 'development';
   }
 
   public static getInstance(): Logger {
@@ -70,8 +70,32 @@ class Logger {
     return Logger.instance;
   }
 
+  private getEnvironment(): string {
+    // Check if we're in a Node.js environment
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env.NODE_ENV || 'production';
+    }
+    // Browser environment - default to production
+    return 'production';
+  }
+
+  private getVersion(): string {
+    // Check if we're in a Node.js environment
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env.npm_package_version || 'unknown';
+    }
+    // Browser environment - return unknown
+    return 'unknown';
+  }
+
   private getLogLevelFromEnv(): LogLevel {
-    const level = process.env.LOG_LEVEL?.toUpperCase();
+    let level: string | undefined;
+    
+    // Check if we're in a Node.js environment
+    if (typeof process !== 'undefined' && process.env) {
+      level = process.env.LOG_LEVEL?.toUpperCase();
+    }
+    
     switch (level) {
       case 'DEBUG': return LogLevel.DEBUG;
       case 'INFO': return LogLevel.INFO;
@@ -122,8 +146,8 @@ class Logger {
       message,
       context: {
         ...context,
-        environment: process.env.NODE_ENV,
-        version: process.env.npm_package_version || 'unknown',
+        environment: this.getEnvironment(),
+        version: this.getVersion(),
       },
       error,
       performance: this.getPerformanceMetrics(),
@@ -145,12 +169,22 @@ class Logger {
   }
 
   private getPerformanceMetrics() {
-    const memUsage = process.memoryUsage();
-    return {
-      duration: 0, // Would be calculated from request start
-      memory: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
-      cpu: 0, // Would be calculated from process.cpuUsage()
-    };
+    // Check if we're in a Node.js environment where process.memoryUsage is available
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      const memUsage = process.memoryUsage();
+      return {
+        duration: 0, // Would be calculated from request start
+        memory: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+        cpu: 0, // Would be calculated from process.cpuUsage()
+      };
+    } else {
+      // Browser environment - return default values
+      return {
+        duration: 0,
+        memory: 0, // Not available in browser
+        cpu: 0, // Not available in browser
+      };
+    }
   }
 
   private sendToExternalService(entry: LogEntry): void {

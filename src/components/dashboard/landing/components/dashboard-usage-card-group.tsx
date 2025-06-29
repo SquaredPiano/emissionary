@@ -44,18 +44,18 @@ export function DashboardUsageCardGroup({ user, stats, emissions }: DashboardUsa
       trend: 'neutral'
     },
     {
-      title: "vs Canadian Average",
+      title: "vs Canadian Household Average",
       icon: <Target className={'text-emerald-500'} size={18} />,
       value: `${emissionData.canadianAverage} kg CO₂e`,
-      change: `${emissionData.weeklyAverage < emissionData.canadianAverage ? '↓' : '↑'} ${Math.abs(emissionData.weeklyAverage - emissionData.canadianAverage).toFixed(1)} kg difference`,
-      trend: emissionData.weeklyAverage < emissionData.canadianAverage ? 'positive' : 'negative'
+      change: `${emissionData.thisWeekEmissions < emissionData.canadianAverage ? '↓' : '↑'} ${Math.abs(emissionData.thisWeekEmissions - emissionData.canadianAverage).toFixed(1)} kg difference`,
+      trend: emissionData.thisWeekEmissions < emissionData.canadianAverage ? 'positive' : 'negative'
     },
     {
-      title: "vs Global Average",
+      title: "vs Global Household Average",
       icon: <Globe className={'text-yellow-500'} size={18} />,
       value: `${emissionData.globalAverage} kg CO₂e`,
-      change: `${emissionData.weeklyAverage < emissionData.globalAverage ? '↓' : '↑'} ${Math.abs(emissionData.weeklyAverage - emissionData.globalAverage).toFixed(1)} kg difference`,
-      trend: emissionData.weeklyAverage < emissionData.globalAverage ? 'positive' : 'negative'
+      change: `${emissionData.thisWeekEmissions < emissionData.globalAverage ? '↓' : '↑'} ${Math.abs(emissionData.thisWeekEmissions - emissionData.globalAverage).toFixed(1)} kg difference`,
+      trend: emissionData.thisWeekEmissions < emissionData.globalAverage ? 'positive' : 'negative'
     },
   ];
 

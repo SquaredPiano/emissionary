@@ -5,6 +5,11 @@ import imutils
 import numpy as np
 import pytesseract
 from imutils.perspective import four_point_transform
+import logging
+from datetime import datetime
+
+DEBUG_DIR = "debug_outputs"
+os.makedirs(DEBUG_DIR, exist_ok=True)
 
 def perform_ocr(img):
     img_orig = cv2.imdecode(img, cv2.IMREAD_COLOR)
@@ -44,6 +49,16 @@ def perform_ocr(img):
     text = pytesseract.image_to_string(cv2.cvtColor(receipt, cv2.COLOR_BGR2RGB), config=options)
     return text
 
+def save_debug_output(image, text, method, config, image_name):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base = os.path.splitext(os.path.basename(image_name))[0]
+    img_path = os.path.join(DEBUG_DIR, f"{base}_{method}_{config}_{timestamp}.png")
+    txt_path = os.path.join(DEBUG_DIR, f"{base}_{method}_{config}_{timestamp}.txt")
+    if image is not None:
+        cv2.imwrite(img_path, image)
+    with open(txt_path, "w") as f:
+        f.write(text)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--image", type=str, required=True, help="path to input image")
@@ -61,6 +76,7 @@ def main():
         print("==================")
         print(text)
         print("\n")
+        save_debug_output(None, text, "ocr", "--psm 6", args.image)
     except Exception as e:
         print("[ERROR] {}".format(e))
 

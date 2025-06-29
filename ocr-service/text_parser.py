@@ -146,7 +146,7 @@ class ReceiptTextParser:
             
             # Extract item name (everything before the weight info)
             item_part = line[:weight_match.start()].strip()
-            
+        
             if item_part:
                 # Clean up item name
                 item_clean = self._clean_item_name(item_part)

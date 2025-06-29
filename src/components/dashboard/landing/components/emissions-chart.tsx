@@ -4,17 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from 'next-themes';
 
-// Fallback data when no real data is available
-const getFallbackData = () => [
-  { date: 'Mon', emissions: 2.1 },
-  { date: 'Tue', emissions: 1.8 },
-  { date: 'Wed', emissions: 3.2 },
-  { date: 'Thu', emissions: 2.5 },
-  { date: 'Fri', emissions: 1.9 },
-  { date: 'Sat', emissions: 4.1 },
-  { date: 'Sun', emissions: 2.8 },
-];
-
 interface EmissionsChartProps {
   emissions?: any;
   lineType?: 'monotone' | 'linear';
@@ -25,13 +14,13 @@ export function EmissionsChart({ emissions }: EmissionsChartProps) {
   const lineColor = theme === 'dark' ? '#10b981' : '#222';
   const dotColor = theme === 'dark' ? '#fff' : '#222';
 
-  // Use real data if available, otherwise fallback to mock data
-  const data = emissions?.monthlyData ? 
-    emissions.monthlyData.slice(-7).map((item: any) => ({
-      date: new Date(item.month).toLocaleDateString('en-US', { weekday: 'short' }),
+  // Use real data if available, otherwise show empty state
+  const data = emissions?.weeklyData ? 
+    emissions.weeklyData.slice(-7).map((item: any) => ({
+      date: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
       emissions: item.emissions
     })) : 
-    getFallbackData();
+    [];
 
   if (data.length === 0) {
     return (
