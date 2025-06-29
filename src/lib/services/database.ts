@@ -94,6 +94,8 @@ export class DatabaseService {
                 quantity: validatedItem.quantity,
                 unitPrice: validatedItem.unitPrice,
                 totalPrice: validatedItem.totalPrice,
+                carbonEmissions: validatedItem.carbonEmissions,
+                confidence: validatedItem.confidence,
               },
             });
           })

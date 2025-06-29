@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+// Helper preprocessors for numbers (handles Decimal, string, number)
+const asNumber = (schema: z.ZodNumber) =>
+  z.preprocess((val) => {
+    if (typeof val === 'string') return parseFloat(val);
+    if (typeof val === 'number') return val;
+    if (val && typeof val === 'object' && 'toNumber' in val) return (val as any).toNumber();
+    return val;
+  }, schema);
+
+const asNumberPositive = () => asNumber(z.number().positive());
+const asNumberNonNegative = () => asNumber(z.number().nonnegative());
+const asNumberMinMax = (min: number, max: number) => asNumber(z.number().min(min).max(max));
+const asNumberMin = (min: number) => asNumber(z.number().min(min));
+const asNumberMax = (max: number) => asNumber(z.number().max(max));
+
 // Base schemas
 export const BaseUserSchema = z.object({
   id: z.string().cuid(),
@@ -19,11 +34,11 @@ export const BaseReceiptSchema = z.object({
   userId: z.string().cuid(),
   imageUrl: z.string().url().optional(),
   merchant: z.string().min(1).max(255),
-  total: z.number().positive(),
+  total: asNumberPositive(),
   date: z.date(),
   currency: z.string().default("USD"),
-  taxAmount: z.number().nonnegative().optional(),
-  tipAmount: z.number().nonnegative().optional(),
+  taxAmount: asNumberNonNegative().optional(),
+  tipAmount: asNumberNonNegative().optional(),
   paymentMethod: z.string().optional(),
   receiptNumber: z.string().optional(),
   createdAt: z.date(),
@@ -34,13 +49,28 @@ export const BaseReceiptItemSchema = z.object({
   id: z.string().cuid(),
   receiptId: z.string().cuid(),
   name: z.string().min(1).max(255),
-  quantity: z.number().positive(),
-  unitPrice: z.number().nonnegative(),
-  totalPrice: z.number().nonnegative(),
+  quantity: asNumberPositive(),
+  unitPrice: asNumberNonNegative(),
+  totalPrice: asNumberNonNegative(),
   category: z.string().optional(),
   brand: z.string().optional(),
   barcode: z.string().optional(),
   description: z.string().optional(),
+  carbonEmissions: asNumberNonNegative().optional(),
+  confidence: asNumber(z.number().min(0).max(1)).optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const BaseEmissionsLogSchema = z.object({
+  id: z.string().cuid(),
+  receiptId: z.string().cuid(),
+  userId: z.string().cuid(),
+  totalCO2: asNumberNonNegative(),
+  breakdown: z.record(z.any()), // JSON field
+  calculationMethod: z.string().optional(),
+  carbonIntensity: asNumberNonNegative().optional(),
+  llmEnhanced: z.boolean().default(false),
   carbonEmissions: z.number().nonnegative().optional(),
   confidence: z.number().min(0).max(1).optional(),
   createdAt: z.date(),
@@ -69,6 +99,16 @@ export const CreateReceiptItemSchema = z.object({
   brand: z.string().optional(),
   barcode: z.string().optional(),
   description: z.string().optional(),
+  carbonEmissions: z.number().nonnegative().optional(),
+  confidence: z.number().min(0).max(1).optional(),
+});
+
+export const CreateEmissionsLogSchema = z.object({
+  totalCO2: z.number().nonnegative(),
+  breakdown: z.record(z.any()),
+  calculationMethod: z.string().optional(),
+  carbonIntensity: z.number().nonnegative().optional(),
+  llmEnhanced: z.boolean().default(false),
   carbonEmissions: z.number().nonnegative().optional(),
   confidence: z.number().min(0).max(1).optional(),
 });
@@ -171,6 +211,15 @@ export const ReceiptFilterSchema = z.object({
   minTotal: z.number().optional(),
   maxTotal: z.number().optional(),
   category: z.string().optional(),
+});
+
+// User sync schemas
+export const UserSyncSchema = z.object({
+  clerkId: z.string(),
+  email: z.string().email(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  avatar: z.string().url().optional(),
 });
 
 // Type exports

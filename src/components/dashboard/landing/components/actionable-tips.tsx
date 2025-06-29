@@ -136,7 +136,7 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="text-center">
             <div className="text-muted-foreground mb-2">💡</div>
-            <p className="text-muted-foreground">Upload more receipts for personalized tips</p>
+            <p className="text-black dark:text-muted-foreground">Upload more receipts for personalized tips</p>
           </div>
         </CardContent>
       </Card>
@@ -165,7 +165,7 @@ export function ActionableTips({ emissions }: ActionableTipsProps) {
                   {tip.impact} Impact
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{tip.description}</p>
+              <p className="text-black dark:text-muted-foreground mb-3">{tip.description}</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1 text-xs text-green-600">
                   <TrendingDown className="h-3 w-3" />

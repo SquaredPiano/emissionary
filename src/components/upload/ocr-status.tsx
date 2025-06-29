@@ -8,36 +8,30 @@ import { Eye, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface OCRStatusProps {
   isProcessing?: boolean;
+  progress?: number;
+  eta?: number;
+  elapsed?: number;
+  statusStep?: string;
+  uploadedFile?: any;
+  preview?: string | null;
   extractedData?: any;
   error?: string;
 }
 
-type ProcessingStep = 'uploading' | 'ocr' | 'parsing' | 'calculating' | 'complete';
+export function OCRStatus({
+  isProcessing = false,
+  progress = 0,
+  eta = 10,
+  elapsed = 0,
+  statusStep = 'uploading',
+  uploadedFile,
+  preview,
+  extractedData,
+  error,
+}: OCRStatusProps) {
+  const steps: string[] = ['uploading', 'ocr', 'parsing', 'calculating', 'complete'];
 
-export function OCRStatus({ isProcessing = false, extractedData, error }: OCRStatusProps) {
-  const [currentStep, setCurrentStep] = useState<ProcessingStep>('uploading');
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    if (isProcessing) {
-      const steps: ProcessingStep[] = ['uploading', 'ocr', 'parsing', 'calculating', 'complete'];
-      let currentIndex = 0;
-      
-      const interval = setInterval(() => {
-        if (currentIndex < steps.length) {
-          setCurrentStep(steps[currentIndex]);
-          setProgress((currentIndex / (steps.length - 1)) * 100);
-          currentIndex++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [isProcessing]);
-
-  const getStepIcon = (step: ProcessingStep) => {
+  const getStepIcon = (step: string) => {
     switch (step) {
       case 'uploading':
         return <Loader2 className="h-4 w-4 animate-spin" />;
@@ -54,14 +48,12 @@ export function OCRStatus({ isProcessing = false, extractedData, error }: OCRSta
     }
   };
 
-  const getStepColor = (step: ProcessingStep) => {
+  const getStepColor = (step: string) => {
     if (error) return 'text-red-600';
-    if (currentStep === step) return 'text-blue-600';
-    if (steps.indexOf(step) < steps.indexOf(currentStep)) return 'text-green-600';
-    return 'text-muted-foreground';
+    if (statusStep === step) return 'text-blue-600';
+    if (steps.indexOf(step) < steps.indexOf(statusStep)) return 'text-green-600';
+    return 'text-black dark:text-gray-400';
   };
-
-  const steps: ProcessingStep[] = ['uploading', 'ocr', 'parsing', 'calculating', 'complete'];
 
   if (!isProcessing && !extractedData && !error) {
     return (
@@ -77,8 +69,8 @@ export function OCRStatus({ isProcessing = false, extractedData, error }: OCRSta
         </CardHeader>
         <CardContent className="h-[400px] flex items-center justify-center">
           <div className="text-center">
-            <div className="text-muted-foreground mb-2">📄</div>
-            <p className="text-muted-foreground">No receipt uploaded yet</p>
+            <div className="text-black dark:text-muted-foreground mb-2">📄</div>
+            <p className="text-black dark:text-gray-400">No receipt uploaded yet</p>
           </div>
         </CardContent>
       </Card>
@@ -97,13 +89,26 @@ export function OCRStatus({ isProcessing = false, extractedData, error }: OCRSta
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Receipt Preview */}
+        {uploadedFile && (
+          <div className="flex items-center gap-3">
+            {preview ? (
+              <img src={preview} alt="Receipt preview" className="h-16 w-auto rounded border" />
+            ) : (
+              <FileText className="h-8 w-8 text-black dark:text-gray-400" />
+            )}
+            <div>
+              <div className="text-sm font-medium">{uploadedFile.name}</div>
+              <div className="text-xs text-black dark:text-gray-400">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+            </div>
+          </div>
+        )}
+
         {/* Processing Steps */}
         <div className="space-y-3">
           {steps.map((step, index) => (
             <div key={step} className="flex items-center gap-3">
-              <div className={`${getStepColor(step)}`}>
-                {getStepIcon(step)}
-              </div>
+              <div className={`${getStepColor(step)}`}>{getStepIcon(step)}</div>
               <span className={`text-sm ${getStepColor(step)}`}>
                 {step.charAt(0).toUpperCase() + step.slice(1)}
                 {step === 'ocr' && ' (Text Extraction)'}
@@ -122,6 +127,10 @@ export function OCRStatus({ isProcessing = false, extractedData, error }: OCRSta
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
+            <div className="flex justify-between text-xs text-black dark:text-gray-400 mt-1">
+              <span>Elapsed: {elapsed}s</span>
+              <span>ETA: ~{Math.max(0, eta - elapsed)}s</span>
+            </div>
           </div>
         )}
 

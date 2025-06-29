@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTheme } from 'next-themes';
 
 // Fallback data when no real data is available
 const getFallbackData = () => [
@@ -16,9 +17,14 @@ const getFallbackData = () => [
 
 interface EmissionsChartProps {
   emissions?: any;
+  lineType?: 'monotone' | 'linear';
 }
 
 export function EmissionsChart({ emissions }: EmissionsChartProps) {
+  const { theme } = useTheme ? useTheme() : { theme: 'light' };
+  const lineColor = theme === 'dark' ? '#10b981' : '#222';
+  const dotColor = theme === 'dark' ? '#fff' : '#222';
+
   // Use real data if available, otherwise fallback to mock data
   const data = emissions?.data?.monthlyData ? 
     emissions.data.monthlyData.slice(-7).map((item: any) => ({
@@ -36,8 +42,8 @@ export function EmissionsChart({ emissions }: EmissionsChartProps) {
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="text-center">
-            <div className="text-muted-foreground mb-2">📊</div>
-            <p className="text-muted-foreground">Upload a receipt to see your emissions trends</p>
+            <div className="text-black dark:text-muted-foreground mb-2">📊</div>
+            <p className="text-black dark:text-muted-foreground">Upload a receipt to see your emissions trends</p>
           </div>
         </CardContent>
       </Card>
@@ -73,13 +79,18 @@ export function EmissionsChart({ emissions }: EmissionsChartProps) {
               labelStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(value: number) => [`${value} kg CO₂e`, 'Emissions']}
             />
+            {/*
+              Use 'monotone' for smooth (squiggly) lines, 'linear' for jagged. Default is 'monotone'.
+              Dots and lines adapt to theme for visibility.
+            */}
             <Line 
-              type="monotone" 
+              type='monotone' 
               dataKey="emissions" 
-              stroke="hsl(var(--primary))" 
+              stroke={lineColor}
               strokeWidth={3}
-              dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+              dot={{ fill: dotColor, stroke: lineColor, strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: lineColor, strokeWidth: 2, fill: dotColor }}
+              connectNulls={true}
             />
           </LineChart>
         </ResponsiveContainer>

@@ -102,15 +102,15 @@ export function HistoryTable() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="text-2xl font-bold">{filteredData.length}</div>
-            <div className="text-sm text-muted-foreground">Total Receipts</div>
+            <div className="text-sm text-black dark:text-muted-foreground">Total Receipts</div>
           </div>
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="text-2xl font-bold">{totalEmissions.toFixed(1)} kg</div>
-            <div className="text-sm text-muted-foreground">Total Emissions</div>
+            <div className="text-sm text-black dark:text-muted-foreground">Total Emissions</div>
           </div>
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="text-2xl font-bold">{averageEmissions.toFixed(1)} kg</div>
-            <div className="text-sm text-muted-foreground">Average per Receipt</div>
+            <div className="text-sm text-black dark:text-muted-foreground">Average per Receipt</div>
           </div>
         </div>
 
@@ -204,7 +204,7 @@ export function HistoryTable() {
         {filteredData.length === 0 && (
           <div className="text-center py-8">
             <div className="text-muted-foreground mb-2">📄</div>
-            <p className="text-muted-foreground">No receipts found</p>
+            <p className="text-black dark:text-muted-foreground">No receipts found</p>
           </div>
         )}
       </CardContent>
