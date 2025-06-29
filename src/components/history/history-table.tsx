@@ -232,6 +232,23 @@ export function HistoryTable() {
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                       {item.emissions.toFixed(1)} kg CO₂e
                     </Badge>
+                    {'receiptItems' in item && Array.isArray(item.receiptItems) && 
+                     item.receiptItems.some((receiptItem: any) => receiptItem.source) && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {(() => {
+                          const sourceCounts = item.receiptItems.reduce((acc: any, receiptItem: any) => {
+                            const source = receiptItem.source || 'unknown';
+                            acc[source] = (acc[source] || 0) + 1;
+                            return acc;
+                          }, {});
+                          return Object.entries(sourceCounts).map(([source, count]: [string, any]) => (
+                            <span key={source} className="mr-1">
+                              {source}: {count}
+                            </span>
+                          ));
+                        })()}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge 

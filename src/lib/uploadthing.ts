@@ -61,7 +61,6 @@ export const uploadRouter = {
         const ocrResult = await processReceiptImage({
           imageUrl: file.url,
           imageType: file.type,
-          fileName: file.name,
         });
 
         if (!ocrResult.success) {
@@ -104,7 +103,15 @@ export const uploadRouter = {
           receiptId: ocrResult.data?.receiptId,
           totalEmissions: ocrResult.data?.totalEmissions,
           itemsCount: ocrResult.data?.itemsCount,
-          ocrResult: ocrResult.data?.ocrResult,
+          merchant: ocrResult.data?.merchant,
+          ocrResult: {
+            items: ocrResult.data?.items || [],
+            totalEmissions: ocrResult.data?.totalEmissions || 0,
+            itemsCount: ocrResult.data?.itemsCount || 0,
+            merchant: ocrResult.data?.merchant || "Unknown Merchant",
+            processingSteps: ocrResult.data?.processingSteps || [],
+            warnings: ocrResult.data?.warnings || [],
+          },
         };
 
       } catch (error) {

@@ -315,6 +315,9 @@ export default function MVPUploadPage() {
                             <div>
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-gray-600">{item.category}</p>
+                              {item.source && (
+                                <p className="text-xs text-blue-600">Source: {item.source}</p>
+                              )}
                             </div>
                             <div className="text-right">
                               <p className="font-medium text-green-700">
