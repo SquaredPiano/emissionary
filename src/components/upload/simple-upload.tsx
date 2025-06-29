@@ -140,41 +140,27 @@ export function SimpleUpload({
   return (
     <Card className="bg-background/50 backdrop-blur-[24px] border-border">
       <CardHeader>
-        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            <CardTitle className="text-xl font-semibold">Upload Receipt</CardTitle>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
+          <CardTitle className="text-xl font-semibold">Upload Your Receipt Image</CardTitle>
         </div>
-        <CardDescription>
-          Upload a photo or PDF of your grocery receipt to calculate carbon emissions
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!uploadedFile ? (
           <div className="space-y-4">
-            <UploadDropzone<OurFileRouter, "receiptUploader">
-              endpoint="receiptUploader"
-              onClientUploadComplete={handleUploadComplete}
-              onUploadError={handleUploadError}
+              <UploadDropzone<OurFileRouter, "receiptUploader">
+                endpoint="receiptUploader"
+                onClientUploadComplete={handleUploadComplete}
+                onUploadError={handleUploadError}
               config={{ mode: "auto" }}
-              appearance={{
+                appearance={{
                 container: "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors border-border hover:border-primary/50 w-full min-h-64 flex flex-col justify-center items-center",
-                allowedContent: "text-xs text-muted-foreground mt-2",
+                  allowedContent: "text-xs text-muted-foreground mt-2",
                 button: "bg-primary-foreground text-black dark:bg-primary-foreground dark:text-black px-4 py-2 rounded-md text-sm font-medium transition-colors !text-black hidden",
-                label: "text-lg font-medium mb-2",
-                uploadIcon: "h-12 w-12 mx-auto mb-4 text-muted-foreground",
-              }}
-            />
+                  label: "text-lg font-medium mb-2",
+                  uploadIcon: "h-12 w-12 mx-auto mb-4 text-muted-foreground",
+                }}
+              />
             {error && (
               <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
                 <AlertCircle className="h-4 w-4 text-destructive" />

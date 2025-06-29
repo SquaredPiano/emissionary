@@ -7,72 +7,54 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, Download, Trash2, Search, Filter } from 'lucide-react';
+import { Eye, Download, Trash2, Search, Filter, EyeOff, Undo2 } from 'lucide-react';
+import { ReceiptStatus } from '@/lib/database.types';
 
-// TODO: Replace with actual data from backend API calls
-const mockHistoryData = [
-  {
-    id: '1',
-    merchant: 'Walmart',
-    date: '2024-01-15',
-    total: 89.45,
-    emissions: 12.4,
-    items: 15,
-    status: 'processed',
-    imageUrl: '/placeholder.jpg'
-  },
-  {
-    id: '2',
-    merchant: 'Sobeys',
-    date: '2024-01-14',
-    total: 67.23,
-    emissions: 8.9,
-    items: 12,
-    status: 'processed',
-    imageUrl: '/placeholder.jpg'
-  },
-  {
-    id: '3',
-    merchant: 'Loblaws',
-    date: '2024-01-13',
-    total: 123.67,
-    emissions: 18.2,
-    items: 22,
-    status: 'processed',
-    imageUrl: '/placeholder.jpg'
-  },
-  {
-    id: '4',
-    merchant: 'No Frills',
-    date: '2024-01-12',
-    total: 45.89,
-    emissions: 6.1,
-    items: 8,
-    status: 'processed',
-    imageUrl: '/placeholder.jpg'
-  },
-  {
-    id: '5',
-    merchant: 'Metro',
-    date: '2024-01-11',
-    total: 78.34,
-    emissions: 11.7,
-    items: 18,
-    status: 'processed',
-    imageUrl: '/placeholder.jpg'
-  }
-];
+const merchants = ['Walmart', 'Sobeys', 'Loblaws', 'No Frills', 'Metro'];
+const mockHistoryData = Array.from({ length: 50 }, (_, i) => {
+  const merchant = merchants[i % merchants.length];
+  return {
+    id: (i + 1).toString(),
+    merchant,
+    date: `2024-01-${(15 - (i % 5)).toString().padStart(2, '0')}`,
+    total: Math.round(Math.random() * 10000 + 2000) / 100,
+    emissions: Math.round((Math.random() * 200 + 50)) / 10,
+    items: Math.floor(Math.random() * 20 + 5),
+    status: ReceiptStatus.PROCESSED,
+    imageUrl: '/placeholder.jpg',
+  };
+});
 
 export function HistoryTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
-  const filteredData = mockHistoryData
-    .filter(item => 
+  // Add hidden and deleted status to data
+  const dataWithStatus = mockHistoryData.map(item => {
+    if (deletedIds.includes(item.id)) {
+      return { ...item, status: 'deleted', prevStatus: item.status };
+    }
+    if (hiddenIds.includes(item.id)) {
+      return { ...item, status: ReceiptStatus.HIDDEN, prevStatus: item.status };
+    }
+    return item;
+  });
+
+  const filteredData = dataWithStatus
+    .filter(item => {
+      if (showDeleted) return item.status === 'deleted';
+      return (
+        item.status !== 'deleted' &&
       item.merchant.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (statusFilter === 'all' || item.status === statusFilter)
-    )
+      );
+    })
     .sort((a, b) => {
       switch (sortBy) {
         case 'date':
@@ -89,13 +71,87 @@ export function HistoryTable() {
   const totalEmissions = filteredData.reduce((sum, item) => sum + item.emissions, 0);
   const averageEmissions = filteredData.length > 0 ? totalEmissions / filteredData.length : 0;
 
+  const handleToggleHide = (id: string) => {
+    setHiddenIds((prev) =>
+      prev.includes(id) ? prev.filter((hid) => hid !== id) : [...prev, id]
+    );
+  };
+
+  const handleSoftDelete = (id: string) => {
+    setDeletedIds((prev) => [...prev, id]);
+  };
+
+  const handleRestore = (id: string) => {
+    setDeletedIds((prev) => prev.filter((did) => did !== id));
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    setDeletedIds((prev) => prev.filter((did) => did !== id));
+    // Optionally, also remove from mockHistoryData if you want true deletion
+  };
+
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+    if (e.shiftKey || showDeleted) {
+      setConfirmDeleteId(id);
+    } else {
+      handleSoftDelete(id);
+    }
+  };
+
+  const handleDownload = (item: any) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(item, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `${item.merchant || 'receipt'}-${item.id}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
   return (
     <Card className="bg-background/50 backdrop-blur-[24px] border-border">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">Receipt History</CardTitle>
+        <CardTitle className="text-xl font-semibold">Your Receipts</CardTitle>
         <CardDescription>
-          View all your uploaded receipts and their carbon emissions
+          Browse, manage, and analyze your uploaded receipts and their carbon emissions
         </CardDescription>
+        <div className="mt-2 text-center">
+          {showDeleted ? (
+            <span className="text-sm text-muted-foreground">
+              Viewing deleted items.{' '}
+              <span
+                className="underline cursor-pointer text-yellow-500 hover:text-yellow-600 transition-colors"
+                onClick={() => setShowDeleted(false)}
+              >
+                View active items
+              </span>
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Not seeing an item?{' '}
+              <span
+                className="underline cursor-pointer text-yellow-500 hover:text-yellow-600 transition-colors"
+                onClick={() => setShowDeleted(true)}
+              >
+                View deleted items
+              </span>
+            </span>
+          )}
+        </div>
+        {showDeleted && (
+          <div className="flex justify-end items-center mt-2 mb-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="px-3 py-1 text-xs"
+              onClick={() => setConfirmDeleteAll(true)}
+              disabled={filteredData.length === 0}
+              style={filteredData.length === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+            >
+              Permanently Delete All
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Stats */}
@@ -115,7 +171,7 @@ export function HistoryTable() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 min-w-[700px] max-w-full">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -125,17 +181,20 @@ export function HistoryTable() {
               className="pl-10"
             />
           </div>
+          {!showDeleted && (
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="processed">Processed</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
+                <SelectItem value={ReceiptStatus.PROCESSED}>Processed</SelectItem>
+                <SelectItem value={ReceiptStatus.PROCESSING}>Processing</SelectItem>
+                <SelectItem value={ReceiptStatus.ERROR}>Error</SelectItem>
+                <SelectItem value={ReceiptStatus.HIDDEN}>Hidden</SelectItem>
             </SelectContent>
           </Select>
+          )}
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Sort by" />
@@ -149,7 +208,7 @@ export function HistoryTable() {
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg">
+        <div className="min-w-[700px] max-w-full overflow-x-auto max-h-[600px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -164,35 +223,52 @@ export function HistoryTable() {
             </TableHeader>
             <TableBody>
               {filteredData.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} className={item.status === ReceiptStatus.HIDDEN ? 'opacity-50 bg-zinc-900/60 dark:bg-zinc-800/60' : item.status === 'deleted' ? 'opacity-60 bg-red-900/30 dark:bg-red-800/30' : ''}>
                   <TableCell className="font-medium">{item.merchant}</TableCell>
                   <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                   <TableCell>${item.total.toFixed(2)}</TableCell>
                   <TableCell>{item.items}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      {item.emissions} kg CO₂e
+                      {item.emissions.toFixed(1)} kg CO₂e
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={item.status === 'processed' ? 'default' : 'secondary'}
+                      variant={item.status === ReceiptStatus.PROCESSED ? 'default' : 'secondary'}
                       className="text-xs"
                     >
                       {item.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm">
+                      {item.status !== 'deleted' ? (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => handleToggleHide(item.id)}>
+                            {item.status === ReceiptStatus.HIDDEN ? (
+                              <EyeOff className="h-4 w-4 text-zinc-400" />
+                            ) : (
                         <Eye className="h-4 w-4" />
+                            )}
                       </Button>
-                      <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleDownload(item)}>
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => handleDeleteClick(item.id, e)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id)}>
+                            <Undo2 className="h-4 w-4 text-green-500" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setConfirmDeleteId(item.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -200,6 +276,41 @@ export function HistoryTable() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Confirmation Modal */}
+        {confirmDeleteId && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+            <div className="bg-background p-6 rounded-lg shadow-lg flex flex-col items-center">
+              <div className="mb-4 text-lg font-semibold">Are you sure you want to permanently delete this entry?</div>
+              <div className="flex gap-4">
+                <Button variant="destructive" onClick={() => { handlePermanentDelete(confirmDeleteId); setConfirmDeleteId(null); }}>
+                  Yes, delete
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete All Confirmation Modal */}
+        {confirmDeleteAll && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+            <div className="bg-background p-6 rounded-lg shadow-lg flex flex-col items-center">
+              <div className="mb-4 text-lg font-semibold text-red-600">Are you sure you want to permanently delete ALL deleted items?</div>
+              <div className="mb-2 text-sm text-muted-foreground">This action <b>cannot</b> be undone.</div>
+              <div className="flex gap-4">
+                <Button variant="destructive" onClick={() => { setDeletedIds([]); setConfirmDeleteAll(false); }}>
+                  Yes, delete all
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmDeleteAll(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {filteredData.length === 0 && (
           <div className="text-center py-8">

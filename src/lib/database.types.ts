@@ -85,3 +85,12 @@ export interface CategoryEmissions {
   percentage: number;
   itemCount: number;
 }
+
+// Enum for receipt/emissions status
+export enum ReceiptStatus {
+  PROCESSED = 'processed',
+  PROCESSING = 'processing',
+  ERROR = 'error',
+  HIDDEN = 'hidden',
+  // Add more statuses as needed
+}
