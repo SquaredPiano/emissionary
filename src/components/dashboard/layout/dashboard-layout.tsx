@@ -5,6 +5,7 @@ import { DashboardGradient } from '@/components/gradients/dashboard-gradient';
 import '../../../styles/dashboard.css';
 import { Sidebar } from '@/components/dashboard/layout/sidebar';
 import { SidebarUserInfo } from '@/components/dashboard/layout/sidebar-user-info';
+import { FooterCredits } from '@/components/shared/footer-credits';
 
 interface Props {
   children: ReactNode;
@@ -27,7 +28,10 @@ export function DashboardLayout({ children }: Props) {
           </div>
         </div>
       </div>
-      <div className="flex flex-col">{children}</div>
+      <div className="flex flex-col">
+        {children}
+        <FooterCredits />
+      </div>
     </div>
   );
 }
