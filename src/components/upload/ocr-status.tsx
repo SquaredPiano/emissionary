@@ -30,7 +30,7 @@ export function OCRStatus({
   error,
 }: OCRStatusProps) {
   const steps: string[] = ['uploading', 'ocr', 'parsing', 'calculating', 'complete'];
-
+      
   const getStepIcon = (step: string) => {
     switch (step) {
       case 'uploading':

@@ -28,7 +28,7 @@ export function HeroSection() {
               Start Tracking
             </Button>
           </Link>
-          <Link href="/dashboard">
+          <Link href="https://devpost.com/software/emissionary" target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="lg" className="px-8 py-3 text-lg border-2 border-green-400 text-green-300 hover:bg-green-400/10 transition-transform transform hover:scale-105">
               <TrendingDown className="h-5 w-5 mr-2 animate-glow text-green-300" />
               View Demo
@@ -41,22 +41,22 @@ export function HeroSection() {
             <div className="bg-green-400/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-glow">
               <Camera className="h-8 w-8 text-green-400 animate-pulse" />
             </div>
-            <h3 className="font-semibold mb-2 text-white">Snap & Upload</h3>
-            <p className="text-sm text-white/80">Take a photo of your receipt and upload it instantly</p>
+            <h3 className="font-semibold mb-2 text-black dark:text-white">Snap & Upload</h3>
+            <p className="text-sm text-black/80 dark:text-white/80">Take a photo of your receipt and upload it instantly</p>
           </div>
           <div className="text-center">
             <div className="bg-lime-300/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-glow">
               <Leaf className="h-8 w-8 text-lime-400 animate-pulse" />
             </div>
-            <h3 className="font-semibold mb-2 text-white">AI Analysis</h3>
-            <p className="text-sm text-white/80">Our AI extracts items and calculates carbon emissions</p>
+            <h3 className="font-semibold mb-2 text-black dark:text-white">AI Analysis</h3>
+            <p className="text-sm text-black/80 dark:text-white/80">Our AI extracts items and calculates carbon emissions</p>
           </div>
           <div className="text-center">
             <div className="bg-green-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-glow">
               <TrendingDown className="h-8 w-8 text-green-600 animate-pulse" />
             </div>
-            <h3 className="font-semibold mb-2 text-white">Track Progress</h3>
-            <p className="text-sm text-white/80">Monitor your emissions and get personalized tips</p>
+            <h3 className="font-semibold mb-2 text-black dark:text-white">Track Progress</h3>
+            <p className="text-sm text-black/80 dark:text-white/80">Monitor your emissions and get personalized tips</p>
           </div>
         </div>
       </div>
