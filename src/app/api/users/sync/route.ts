@@ -18,7 +18,7 @@ const UserSyncSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Get the headers
-    const headerPayload = headers();
+    const headerPayload = await headers();
     const svix_id = headerPayload.get("svix-id");
     const svix_timestamp = headerPayload.get("svix-timestamp");
     const svix_signature = headerPayload.get("svix-signature");
@@ -31,36 +31,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-      user = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email: validatedData.email,
-          firstName: validatedData.firstName || null,
-          lastName: validatedData.lastName || null,
-        },
+    // Get the body
+    const payload = await request.text();
+    const body = JSON.parse(payload);
+
+    // Create a new Svix instance with your secret.
+    const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || '');
+
+    let evt: any;
+
+    // Verify the payload with the headers
+    try {
+      evt = wh.verify(payload, {
+        "svix-id": svix_id,
+        "svix-timestamp": svix_timestamp,
+        "svix-signature": svix_signature,
       });
-    }
-
-    return NextResponse.json({
-      success: true,
-      user: serializePrismaResult({
-        id: user.id,
-        clerkId: user.clerkId,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        avatar: user.avatar,
-        bio: user.bio,
-        location: user.location,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      }),
-    });
-
-  } catch (error) {
-    console.error('User sync error:', error);
-    
-    if (error instanceof z.ZodError) {
+    } catch (err) {
+      console.error('Error verifying webhook:', err);
       return NextResponse.json(
         { error: 'Webhook verification failed' },
         { status: 400 }
@@ -81,7 +69,7 @@ export async function POST(request: NextRequest) {
         const email = user.email_addresses?.[0]?.email_address;
         
         if (!email) {
-          logger.error('No email found for user', { userId: id });
+          logger.error('No email found for user', undefined, { userId: id });
           return NextResponse.json(
             { error: 'No email found for user' },
             { status: 400 }
@@ -97,7 +85,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!syncResult.success) {
-          logger.error('User sync failed', { userId: id, error: syncResult.error });
+          logger.error('User sync failed', new Error(syncResult.error), { userId: id });
           return NextResponse.json(
             { error: syncResult.error },
             { status: 500 }

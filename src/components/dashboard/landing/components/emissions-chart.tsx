@@ -26,8 +26,8 @@ export function EmissionsChart({ emissions }: EmissionsChartProps) {
   const dotColor = theme === 'dark' ? '#fff' : '#222';
 
   // Use real data if available, otherwise fallback to mock data
-  const data = emissions?.data?.monthlyData ? 
-    emissions.data.monthlyData.slice(-7).map((item: any) => ({
+  const data = emissions?.monthlyData ? 
+    emissions.monthlyData.slice(-7).map((item: any) => ({
       date: new Date(item.month).toLocaleDateString('en-US', { weekday: 'short' }),
       emissions: item.emissions
     })) : 

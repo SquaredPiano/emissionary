@@ -9,21 +9,21 @@ interface DashboardUsageCardGroupProps {
 
 // Fallback data when no real data is available
 const getFallbackData = () => ({
-  totalEmissionsWeek: 12.4,
+  thisWeekEmissions: 12.4,
   weeklyAverage: 15.2,
-  canadianAverage: 18.5,
-  globalAverage: 22.1,
+  canadianAverage: 180, // From https://www.toronto.ca/legdocs/mmis/2023/ie/bgrd/backgroundfile-239047.pdf
+  globalAverage: 154, // From https://www.futuretracker.com/post/what-is-your-food-footprint 
   highestItem: { name: 'Beef (500g)', emissions: 8.2 },
   lowestItem: { name: 'Bananas (1kg)', emissions: 0.8 }
 });
 
 export function DashboardUsageCardGroup({ user, stats, emissions }: DashboardUsageCardGroupProps) {
   // Use real data if available, otherwise fallback to mock data
-  const emissionData = emissions?.data ? {
-    totalEmissionsWeek: emissions.data.totalEmissions || 0,
-    weeklyAverage: emissions.data.averageEmissionsPerReceipt || 0,
-    canadianAverage: 18.5, // TODO: Get from API
-    globalAverage: 22.1, // TODO: Get from API
+  const emissionData = emissions ? {
+    thisWeekEmissions: emissions.thisWeekEmissions || 0,
+    weeklyAverage: emissions.weeklyAverage || 0,
+    canadianAverage: 180, // From https://www.toronto.ca/legdocs/mmis/2023/ie/bgrd/backgroundfile-239047.pdf 
+    globalAverage: 154, // From https://www.futuretracker.com/post/what-is-your-food-footprint 
     highestItem: { name: 'N/A', emissions: 0 },
     lowestItem: { name: 'N/A', emissions: 0 }
   } : getFallbackData();
@@ -32,9 +32,9 @@ export function DashboardUsageCardGroup({ user, stats, emissions }: DashboardUsa
     {
       title: "This Week's Emissions",
       icon: <Leaf className={'text-green-500'} size={18} />,
-      value: `${emissionData.totalEmissionsWeek.toFixed(1)} kg CO₂e`,
-      change: `${emissionData.totalEmissionsWeek < emissionData.weeklyAverage ? '↓' : '↑'} ${Math.abs(emissionData.totalEmissionsWeek - emissionData.weeklyAverage).toFixed(1)} kg vs average`,
-      trend: emissionData.totalEmissionsWeek < emissionData.weeklyAverage ? 'positive' : 'negative'
+      value: `${emissionData.thisWeekEmissions.toFixed(1)} kg CO₂e`,
+      change: `${emissionData.thisWeekEmissions < emissionData.weeklyAverage ? '↓' : '↑'} ${Math.abs(emissionData.thisWeekEmissions - emissionData.weeklyAverage).toFixed(1)} kg vs average`,
+      trend: emissionData.thisWeekEmissions < emissionData.weeklyAverage ? 'positive' : 'negative'
     },
     {
       title: "Weekly Average",
@@ -47,15 +47,15 @@ export function DashboardUsageCardGroup({ user, stats, emissions }: DashboardUsa
       title: "vs Canadian Average",
       icon: <Target className={'text-emerald-500'} size={18} />,
       value: `${emissionData.canadianAverage} kg CO₂e`,
-      change: `${emissionData.totalEmissionsWeek < emissionData.canadianAverage ? '↓' : '↑'} ${Math.abs(emissionData.totalEmissionsWeek - emissionData.canadianAverage).toFixed(1)} kg difference`,
-      trend: emissionData.totalEmissionsWeek < emissionData.canadianAverage ? 'positive' : 'negative'
+      change: `${emissionData.weeklyAverage < emissionData.canadianAverage ? '↓' : '↑'} ${Math.abs(emissionData.weeklyAverage - emissionData.canadianAverage).toFixed(1)} kg difference`,
+      trend: emissionData.weeklyAverage < emissionData.canadianAverage ? 'positive' : 'negative'
     },
     {
       title: "vs Global Average",
       icon: <Globe className={'text-yellow-500'} size={18} />,
       value: `${emissionData.globalAverage} kg CO₂e`,
-      change: `${emissionData.totalEmissionsWeek < emissionData.globalAverage ? '↓' : '↑'} ${Math.abs(emissionData.totalEmissionsWeek - emissionData.globalAverage).toFixed(1)} kg difference`,
-      trend: emissionData.totalEmissionsWeek < emissionData.globalAverage ? 'positive' : 'negative'
+      change: `${emissionData.weeklyAverage < emissionData.globalAverage ? '↓' : '↑'} ${Math.abs(emissionData.weeklyAverage - emissionData.globalAverage).toFixed(1)} kg difference`,
+      trend: emissionData.weeklyAverage < emissionData.globalAverage ? 'positive' : 'negative'
     },
   ];
 

@@ -37,119 +37,63 @@ fi
 
 print_status "🚀 Starting Emissionary Application..."
 
-# Check if Python OCR service is already running
-if curl -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
-    print_warning "OCR service is already running on port 8000"
-else
-    print_status "Starting Python OCR service..."
-    
-    # Check if OCR service directory exists
-    if [ ! -d "ocr-service" ]; then
-        print_error "OCR service directory not found. Please ensure the project is properly set up."
-        exit 1
-    fi
-    
-    # Start OCR service in background
-    cd ocr-service
-    
-    # Check if virtual environment exists
-    if [ ! -d "venv" ]; then
-        print_warning "Virtual environment not found. Creating one..."
-        python3 -m venv venv
-    fi
-    
-    # Activate virtual environment and start service
-    source venv/bin/activate
-    
-    # Check if dependencies are installed
-    if ! python -c "import fastapi" > /dev/null 2>&1; then
-        print_warning "Dependencies not installed. Installing..."
-        pip install -r requirements.txt
-    fi
-    
-    # Start the OCR service
-    python start.py &
-    OCR_PID=$!
-    
-    # Wait for OCR service to start
-    print_status "Waiting for OCR service to start..."
-    for i in {1..30}; do
-        if curl -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
-            print_success "OCR service started successfully!"
-            break
-        fi
-        sleep 1
-    done
-    
-    if [ $i -eq 30 ]; then
-        print_error "OCR service failed to start within 30 seconds"
-        kill $OCR_PID 2>/dev/null || true
-        exit 1
-    fi
-    
-    cd ..
+# Check if .env file exists
+if [ ! -f ".env" ]; then
+    print_error "Error: .env file not found. Please copy env.example to .env and configure your environment variables."
+    exit 1
 fi
 
-# Check if Next.js is already running
-if curl -s http://localhost:3000 > /dev/null 2>&1; then
-    print_warning "Next.js app is already running on port 3000"
-else
-    print_status "Starting Next.js frontend..."
-    
-    # Check if dependencies are installed
-    if [ ! -d "node_modules" ]; then
-        print_warning "Node.js dependencies not installed. Installing..."
-        pnpm install
-    fi
-    
-    # Start Next.js in background
-    pnpm dev &
-    NEXTJS_PID=$!
-    
-    # Wait for Next.js to start
-    print_status "Waiting for Next.js to start..."
-    for i in {1..30}; do
-        if curl -s http://localhost:3000 > /dev/null 2>&1; then
-            print_success "Next.js started successfully!"
-            break
-        fi
-        sleep 1
-    done
-    
-    if [ $i -eq 30 ]; then
-        print_error "Next.js failed to start within 30 seconds"
-        kill $NEXTJS_PID 2>/dev/null || true
-        exit 1
-    fi
+# Start OCR service in background
+print_status "Starting OCR service..."
+cd ocr-service
+
+# Check if virtual environment exists
+if [ ! -d "venv" ]; then
+    print_warning "Creating OCR virtual environment..."
+    python3 -m venv venv
 fi
 
-# Test the integration
-print_status "Testing application integration..."
-if curl -s http://localhost:3000/api/ocr | grep -q "healthy"; then
-    print_success "✅ Application integration test passed!"
+# Activate virtual environment and install dependencies
+source venv/bin/activate
+pip install -r requirements.txt > /dev/null 2>&1
+
+# Start OCR service in background
+print_status "Starting OCR service on http://localhost:8000"
+python app.py &
+OCR_PID=$!
+
+# Wait a moment for OCR service to start
+sleep 3
+
+# Check if OCR service is running
+if ! curl -s http://localhost:8000/health > /dev/null; then
+    print_warning "Warning: OCR service may not be running properly"
 else
-    print_warning "⚠️  Application integration test failed. Check the logs above."
+    print_success "OCR service is running"
 fi
 
-print_success "🎉 Emissionary is now running!"
-echo ""
-echo "📱 Frontend: http://localhost:3000"
-echo "🔧 OCR API:  http://127.0.0.1:8000"
-echo "📊 Health:   http://localhost:3000/api/ocr"
-echo ""
-echo "Press Ctrl+C to stop all services"
+# Go back to root directory
+cd ..
+
+# Start Next.js development server
+print_status "Starting Next.js development server..."
+print_status "Frontend will be available at http://localhost:3000"
+print_status "Press Ctrl+C to stop all services"
 
 # Function to cleanup on exit
 cleanup() {
-    print_status "Shutting down services..."
-    kill $OCR_PID 2>/dev/null || true
-    kill $NEXTJS_PID 2>/dev/null || true
-    print_success "Services stopped"
+    print_status "Stopping services..."
+    if [ ! -z "$OCR_PID" ]; then
+        kill $OCR_PID 2>/dev/null
+    fi
     exit 0
 }
 
-# Set up signal handlers
+# Set trap to cleanup on script exit
 trap cleanup SIGINT SIGTERM
 
-# Keep script running
-wait 
+# Start Next.js
+pnpm dev
+
+# Cleanup when Next.js exits
+cleanup 

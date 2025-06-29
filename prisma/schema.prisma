@@ -38,11 +38,11 @@ model Receipt {
   userId      String
   imageUrl    String?
   merchant    String
-  total       Decimal  @db.Decimal(10, 2)
+  total       Decimal
   date        DateTime
   currency    String   @default("USD")
-  taxAmount   Decimal? @db.Decimal(10, 2) @default(0)
-  tipAmount   Decimal? @db.Decimal(10, 2) @default(0)
+  taxAmount   Decimal? @default(0)
+  tipAmount   Decimal? @default(0)
   paymentMethod String?
   receiptNumber String?
   totalCarbonEmissions Decimal @default(0) // Total carbon emissions for this receipt
@@ -60,15 +60,15 @@ model ReceiptItem {
   id          String   @id @default(cuid())
   receiptId   String
   name        String
-  quantity    Decimal  @db.Decimal(10, 3)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  totalPrice  Decimal  @db.Decimal(10, 2)
+  quantity    Decimal
+  unitPrice   Decimal
+  totalPrice  Decimal
   category    String?
   brand       String?
   barcode     String?
   description String?
-  carbonEmissions Decimal?
-  confidence  Decimal?
+  carbonEmissions Decimal @default(0) // Carbon emissions in kg CO2e
+  confidence  Decimal @default(0.8)   // OCR confidence score
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -11,14 +11,21 @@ import {
   type OCRResponse,
   type OCRItem
 } from "@/lib/schemas";
-import { OCRService } from "@/lib/services/ocr";
+import { receiptProcessingService } from "@/lib/services/receipt-processing";
 import { Decimal } from "@prisma/client/runtime/library";
+
+/**
+ * Serialize Prisma results to remove Decimal objects
+ * This ensures only plain objects are passed to client components
+ */
+function serializePrismaResult<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
 
 // Validation schemas
 const ProcessReceiptSchema = z.object({
   imageUrl: z.string().url(),
-  imageType: z.string(),
-  fileName: z.string(),
+  imageType: z.string().default("image/jpeg"),
 });
 
 const GetReceiptsSchema = z.object({
@@ -41,16 +48,11 @@ export async function processReceiptImage(
   data: z.infer<typeof ProcessReceiptSchema>
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    // Authenticate user
+    // Get authenticated user
     const { userId } = await auth();
     if (!userId) {
-      return { success: false, error: "Unauthorized" };
+      return { success: false, error: "Authentication required" };
     }
-
-    // Validate input
-    const validatedData = ProcessReceiptSchema.parse(data);
-
-    logger.info("Processing receipt image", { userId, fileName: validatedData.fileName });
 
     // Get user from database
     const user = await prisma.user.findUnique({
@@ -58,62 +60,95 @@ export async function processReceiptImage(
     });
 
     if (!user) {
-      return { success: false, error: "User not found" };
+      return { success: false, error: "User not found in database" };
     }
 
-    // Download image from UploadThing URL
-    const imageResponse = await fetch(validatedData.imageUrl);
+    logger.info("Processing receipt image", {
+      userId: user.id,
+      imageUrl: data.imageUrl,
+      imageType: data.imageType,
+    });
+
+    // Download image from URL
+    const imageResponse = await fetch(data.imageUrl);
     if (!imageResponse.ok) {
       return { success: false, error: "Failed to download image" };
     }
 
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
 
-    // Process through OCR service
-    const ocrResult = await OCRService.processReceiptImage(
+    // Process receipt with OCR and AI
+    const processedData = await receiptProcessingService.processReceipt(
       imageBuffer,
-      validatedData.imageType,
-      userId
+      data.imageType,
+      {
+        userId: user.id,
+        requestId: `req_${Date.now()}`,
+        enableRetries: true,
+        enableFallbacks: true,
+        validateOcrQuality: true,
+      }
     );
 
-    if (!ocrResult.success) {
-      return { success: false, error: ocrResult.error_message || "OCR processing failed" };
+    if (!processedData.success) {
+      logger.warn("Receipt processing failed", {
+        userId: user.id,
+        error: processedData.error,
+      });
+      
+      // Don't fail completely - create receipt with available data
+      const fallbackData = {
+        imageUrl: data.imageUrl,
+        merchant: "Unknown Merchant",
+        total: 0,
+        date: new Date(),
+        currency: "USD",
+        totalCarbonEmissions: 0,
+        items: [],
+      };
+
+      // Create receipt with fallback data
+      const receipt = await prisma.receipt.create({
+        data: {
+          userId: user.id,
+          imageUrl: fallbackData.imageUrl,
+          merchant: fallbackData.merchant,
+          total: new Decimal(fallbackData.total),
+          date: fallbackData.date,
+          currency: fallbackData.currency,
+          totalCarbonEmissions: new Decimal(fallbackData.totalCarbonEmissions),
+        },
+      });
+
+      // Serialize the receipt data
+      const serializedReceipt = serializePrismaResult(receipt);
+
+      return {
+        success: true,
+        data: {
+          receiptId: serializedReceipt.id,
+          items: [],
+          totalEmissions: 0,
+          itemsCount: 0,
+          processingSteps: processedData.processingSteps || [],
+          warnings: processedData.warnings || ["Processing failed, using fallback data"],
+        },
+      };
     }
 
-    // Calculate total carbon emissions if not present
-    let totalCarbonEmissions = ocrResult.total_carbon_emissions;
-    if (
-      (typeof totalCarbonEmissions !== 'number' || isNaN(totalCarbonEmissions)) &&
-      Array.isArray(ocrResult.items)
-    ) {
-      totalCarbonEmissions = ocrResult.items.reduce(
-        (sum, item) => sum + (item.carbon_emissions || 0),
-        0
-      );
-      logger.info("Calculated total carbon emissions from items", {
-        userId,
-        originalTotal: ocrResult.total_carbon_emissions,
-        calculatedTotal: totalCarbonEmissions,
-        itemsCount: ocrResult.items.length,
-        itemsWithEmissions: ocrResult.items.filter(item => (item.carbon_emissions || 0) > 0).length
-      });
-    } else {
-      logger.info("Using total carbon emissions from OCR result", {
-        userId,
-        totalCarbonEmissions,
-        itemsCount: ocrResult.items?.length || 0
-      });
-    }
-
-    // Transform OCR data to database format
+    // Transform processed data to database format
     const receiptData = {
-      imageUrl: validatedData.imageUrl,
-      merchant: ocrResult.merchant || "Unknown Merchant",
-      total: ocrResult.total || 0,
-      date: new Date(ocrResult.date || new Date()),
+      imageUrl: data.imageUrl,
+      merchant: processedData.data?.merchant || "Unknown Merchant",
+      total: processedData.data?.total || 0,
+      date: new Date(),
       currency: "USD",
-      totalCarbonEmissions: totalCarbonEmissions || 0,
-      processingTime: ocrResult.processing_time || 0,
+      taxAmount: undefined,
+      tipAmount: undefined,
+      paymentMethod: undefined,
+      receiptNumber: undefined,
+      totalCarbonEmissions: processedData.data?.total_carbon_emissions || 0,
+      processingTime: processedData.data?.processing_time || 0,
     };
 
     logger.info("Receipt data prepared for database", {
@@ -121,11 +156,8 @@ export async function processReceiptImage(
       merchant: receiptData.merchant,
       total: receiptData.total,
       totalCarbonEmissions: receiptData.totalCarbonEmissions,
-      itemsCount: ocrResult.items?.length || 0
+      itemsCount: processedData.data?.items?.length || 0
     });
-
-    // Validate receipt data
-    const validatedReceipt = CreateReceiptFromOCRSchema.parse(receiptData);
 
     // Create receipt with items in a transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -133,22 +165,33 @@ export async function processReceiptImage(
       const receipt = await tx.receipt.create({
         data: {
           userId: user.id,
-          imageUrl: validatedReceipt.imageUrl,
-          merchant: validatedReceipt.merchant,
-          total: new Decimal(validatedReceipt.total),
-          date: validatedReceipt.date,
-          currency: validatedReceipt.currency,
-          taxAmount: validatedReceipt.taxAmount ? new Decimal(validatedReceipt.taxAmount) : null,
-          tipAmount: validatedReceipt.tipAmount ? new Decimal(validatedReceipt.tipAmount) : null,
-          paymentMethod: validatedReceipt.paymentMethod,
-          receiptNumber: validatedReceipt.receiptNumber,
-          totalCarbonEmissions: new Decimal(validatedReceipt.totalCarbonEmissions),
+          imageUrl: receiptData.imageUrl,
+          merchant: receiptData.merchant,
+          total: new Decimal(receiptData.total),
+          date: receiptData.date,
+          currency: receiptData.currency,
+          taxAmount: receiptData.taxAmount ? new Decimal(receiptData.taxAmount) : null,
+          tipAmount: receiptData.tipAmount ? new Decimal(receiptData.tipAmount) : null,
+          paymentMethod: receiptData.paymentMethod,
+          receiptNumber: receiptData.receiptNumber,
+          totalCarbonEmissions: new Decimal(receiptData.totalCarbonEmissions),
         },
       });
 
       // Create receipt items if available
-      if (ocrResult.items && ocrResult.items.length > 0) {
-        const receiptItems = OCRService.transformOCRItemsToReceiptItems(ocrResult.items);
+      if (processedData.data?.items && processedData.data.items.length > 0) {
+        const receiptItems = processedData.data.items.map((item: any) => ({
+          name: item.name || item.canonical_name || "Unknown Item",
+          quantity: item.quantity || 1,
+          unitPrice: item.total_price ? item.total_price / item.quantity : 0,
+          totalPrice: item.total_price || 0,
+          category: item.category || "processed",
+          brand: "",
+          barcode: "",
+          description: "",
+          carbonEmissions: item.carbon_emissions || 0,
+          confidence: item.confidence || 0.5,
+        }));
         
         for (const item of receiptItems) {
           await tx.receiptItem.create({
@@ -172,39 +215,59 @@ export async function processReceiptImage(
       return receipt;
     });
 
+    // Serialize the result
+    const serializedResult = serializePrismaResult(result);
+
     // Revalidate cache
     revalidatePath("/dashboard");
     revalidatePath("/history");
 
     logger.info("Receipt processed successfully", { 
       userId, 
-      receiptId: result.id,
-      itemsCount: ocrResult.items?.length || 0,
-      totalEmissions: ocrResult.total_carbon_emissions
+      receiptId: serializedResult.id,
+      itemsCount: processedData.data?.items?.length || 0,
+      totalEmissions: processedData.data?.total_carbon_emissions,
+      processingSteps: processedData.data?.processing_steps,
+      warnings: processedData.data?.warnings?.length || 0
     });
 
     return {
       success: true,
       data: {
-        receiptId: result.id,
-        ocrResult,
-        totalEmissions: ocrResult.total_carbon_emissions,
-        itemsCount: ocrResult.items?.length || 0,
+        receiptId: serializedResult.id,
+        items: processedData.data?.items?.map((item: any) => ({
+          name: item.canonical_name || item.name,
+          category: item.category || 'unknown',
+          carbon_emissions: item.carbon_emissions ?? 0,
+          confidence: item.confidence ?? 0.8,
+          source: item.source || '',
+          status: item.is_food === false ? 'Unknown' : 'Mapped',
+          estimated_weight_kg: null,
+          unit_price: item.total_price ? item.total_price / item.quantity : null,
+          total_price: item.total_price ?? null,
+        })) || [],
+        totalEmissions: processedData.data?.total_carbon_emissions ?? 0,
+        itemsCount: processedData.data?.items?.length || 0,
+        processingSteps: processedData.data?.processing_steps,
+        warnings: processedData.data?.warnings,
       },
     };
 
   } catch (error) {
-    logger.error("Error processing receipt", error instanceof Error ? error : new Error(String(error)));
+    logger.error("Receipt processing API error", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
-      return { success: false, error: `Validation error: ${error.errors.map(e => e.message).join(", ")}` };
+      return { 
+        success: false, 
+        error: 'Invalid request format'
+      };
     }
-    
+
     if (error instanceof Error) {
       return { success: false, error: error.message };
     }
-    
-    return { success: false, error: "Failed to process receipt" };
+
+    return { success: false, error: 'Internal server error' };
   }
 }
 
@@ -275,26 +338,34 @@ export async function getUserReceipts(
     const hasNextPage = validatedData.page < totalPages;
     const hasPrevPage = validatedData.page > 1;
 
-    return {
-      success: true,
-      data: {
-        receipts,
-        pagination: {
-          page: validatedData.page,
-          limit: validatedData.limit,
-          total,
-          totalPages,
-          hasNextPage,
-          hasPrevPage,
-        },
+    const result = {
+      receipts,
+      pagination: {
+        page: validatedData.page,
+        limit: validatedData.limit,
+        total,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
       },
     };
 
+    // Serialize to remove Decimal objects
+    const serializedResult = serializePrismaResult(result);
+
+    return {
+      success: true,
+      data: serializedResult,
+    };
+
   } catch (error) {
-    logger.error("Error getting user receipts", error instanceof Error ? error : new Error(String(error)));
+    logger.error("Error getting receipts", error instanceof Error ? error : new Error(String(error)));
     
     if (error instanceof z.ZodError) {
-      return { success: false, error: `Validation error: ${error.errors.map(e => e.message).join(", ")}` };
+      return { 
+        success: false, 
+        error: `Validation error: ${error.errors.map(e => e.message).join(", ")}`
+      };
     }
     
     if (error instanceof Error) {
@@ -342,9 +413,12 @@ export async function getReceiptById(
       return { success: false, error: "Receipt not found" };
     }
 
+    // Serialize to remove Decimal objects
+    const serializedReceipt = serializePrismaResult(receipt);
+
     return {
       success: true,
-      data: receipt,
+      data: serializedReceipt,
     };
 
   } catch (error) {
@@ -443,8 +517,18 @@ export async function getUserEmissionsStats(): Promise<{ success: boolean; data?
       return { success: false, error: "User not found" };
     }
 
+    // Calculate date ranges
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const fourWeeksAgo = new Date(now);
+    fourWeeksAgo.setDate(now.getDate() - 28); // 4 weeks ago
+    fourWeeksAgo.setHours(0, 0, 0, 0);
+
     // Get emissions statistics
-    const [totalEmissions, totalReceipts, monthlyEmissions, categoryBreakdown] = await Promise.all([
+    const [totalEmissions, totalReceipts, thisWeekEmissions, fourWeekEmissions, monthlyEmissions, categoryBreakdown] = await Promise.all([
       // Total emissions
       prisma.receipt.aggregate({
         where: { userId: user.id },
@@ -454,6 +538,24 @@ export async function getUserEmissionsStats(): Promise<{ success: boolean; data?
       // Total receipts
       prisma.receipt.count({
         where: { userId: user.id },
+      }),
+      
+      // This week's emissions
+      prisma.receipt.aggregate({
+        where: { 
+          userId: user.id,
+          date: { gte: startOfWeek }
+        },
+        _sum: { totalCarbonEmissions: true },
+      }),
+      
+      // Last 4 weeks emissions
+      prisma.receipt.aggregate({
+        where: { 
+          userId: user.id,
+          date: { gte: fourWeeksAgo }
+        },
+        _sum: { totalCarbonEmissions: true },
       }),
       
       // Monthly emissions (last 12 months)
@@ -483,6 +585,11 @@ export async function getUserEmissionsStats(): Promise<{ success: boolean; data?
         },
       }),
     ]);
+
+    // Calculate weekly averages
+    const thisWeekTotal = Number(thisWeekEmissions._sum.totalCarbonEmissions || 0);
+    const fourWeekTotal = Number(fourWeekEmissions._sum.totalCarbonEmissions || 0);
+    const weeklyAverage = fourWeekTotal / 4; // Average over 4 weeks
 
     // Process monthly data
     const monthlyData = Array.from({ length: 12 }, (_, i) => {
@@ -520,6 +627,9 @@ export async function getUserEmissionsStats(): Promise<{ success: boolean; data?
       data: {
         totalEmissions: Number(totalEmissions._sum.totalCarbonEmissions || 0),
         totalReceipts,
+        thisWeekEmissions: thisWeekTotal,
+        weeklyAverage: weeklyAverage,
+        fourWeekTotal: fourWeekTotal,
         monthlyData,
         categoryBreakdown: categoryStats,
         averageEmissionsPerReceipt: totalReceipts > 0 ? Number(totalEmissions._sum.totalCarbonEmissions || 0) / totalReceipts : 0,

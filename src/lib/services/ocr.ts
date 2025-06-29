@@ -2,218 +2,266 @@ import { OCRResponseSchema, type OCRResponse, type OCRItem } from "@/lib/schemas
 import { logger } from "@/lib/logger";
 import { z } from "zod";
 
+/**
+ * OCR Service Configuration Interface
+ */
+export interface OCRServiceConfig {
+  readonly baseUrl: string;
+  readonly timeoutMs: number;
+  readonly maxRetries: number;
+  readonly retryDelayMs: number;
+  readonly healthCheckTimeoutMs: number;
+  readonly maxFileSizeBytes: number;
+  readonly allowedMimeTypes: readonly string[];
+}
+
+/**
+ * OCR Processing Options
+ */
+export interface OCRProcessingOptions {
+  readonly userId?: string;
+  readonly requestId?: string;
+  readonly enableRetries?: boolean;
+  readonly validateHealth?: boolean;
+}
+
+/**
+ * OCR Service Response Types
+ */
+export interface OCRHealthResponse {
+  readonly status: 'healthy' | 'unhealthy';
+  readonly timestamp: string;
+  readonly version?: string;
+  readonly uptime?: number;
+}
+
+export interface OCRProcessingResult {
+  readonly success: boolean;
+  readonly data?: OCRResponse;
+  readonly error?: Error;
+  readonly processingTime: number;
+  readonly retryCount: number;
+}
+
+/**
+ * Custom OCR Service Errors
+ */
+export class OCRServiceError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly statusCode?: number,
+    public readonly retryable: boolean = false
+  ) {
+    super(message);
+    this.name = 'OCRServiceError';
+  }
+}
+
+export class OCRValidationError extends OCRServiceError {
+  constructor(message: string, public readonly field?: string) {
+    super(message, "VALIDATION_ERROR", undefined, false);
+    this.name = 'OCRValidationError';
+  }
+}
+
+/**
+ * OCR Service Implementation
+ * 
+ * Provides OCR processing capabilities with robust error handling,
+ * retry mechanisms, and comprehensive monitoring.
+ */
 export class OCRService {
-  private static readonly OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8000";
-  private static readonly TIMEOUT_MS = 30000; // 30 seconds
+  private static readonly DEFAULT_CONFIG: OCRServiceConfig = {
+    baseUrl: process.env.OCR_SERVICE_URL || "http://127.0.0.1:8000",
+    timeoutMs: 30000,
+    maxRetries: 3,
+    retryDelayMs: 1000,
+    healthCheckTimeoutMs: 5000,
+    maxFileSizeBytes: 10 * 1024 * 1024, // 10MB
+    allowedMimeTypes: [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/bmp',
+      'application/pdf'
+    ] as const,
+  };
+
+  private readonly config: OCRServiceConfig;
+
+  constructor(config?: Partial<OCRServiceConfig>) {
+    this.config = { ...OCRService.DEFAULT_CONFIG, ...config };
+  }
 
   /**
-   * Process receipt image through OCR service
+   * Process receipt image through OCR service with comprehensive error handling
    */
-  static async processReceiptImage(
+  public async processReceiptImage(
     imageBuffer: Buffer,
     imageType: string,
-    userId?: string
-  ): Promise<OCRResponse> {
+    options: OCRProcessingOptions = {}
+  ): Promise<OCRProcessingResult> {
+    const startTime = Date.now();
+    const { userId, requestId, enableRetries = true, validateHealth = true } = options;
+    
+    const context = { userId, requestId, imageType, bufferSize: imageBuffer.length };
+
     try {
-      // Validate image type
-      if (!imageType.startsWith("image/") && imageType !== "application/pdf") {
-        throw new Error("Invalid file type. Only images and PDFs are supported.");
+      logger.info("Starting OCR processing", context);
+
+      // Validate inputs
+      this.validateImageInput(imageBuffer, imageType);
+
+      // Check service health if enabled
+      if (validateHealth) {
+        await this.ensureServiceHealth();
       }
 
-      // Validate image buffer
-      if (!imageBuffer || imageBuffer.length === 0) {
-        throw new Error("Empty image buffer provided.");
-      }
+      // Process with retry mechanism
+      const result = enableRetries 
+        ? await this.processWithRetry(imageBuffer, imageType, context)
+        : await this.processSingle(imageBuffer, imageType, context);
 
-      // Check OCR service health first
-      const isHealthy = await this.checkHealth();
-      if (!isHealthy) {
-        throw new Error("OCR service is not available. Please try again later.");
-      }
+      const processingTime = Date.now() - startTime;
+      
+      logger.info("OCR processing completed successfully", {
+        ...context,
+        processingTime,
+        itemsCount: result.items?.length || 0,
+        totalEmissions: result.total_carbon_emissions || 0,
+      });
 
-      // Convert to base64
-      const base64Image = imageBuffer.toString("base64");
-
-      // Prepare request payload
-      const payload = {
-        image: base64Image,
-        image_type: imageType,
+      return {
+        success: true,
+        data: result,
+        processingTime,
+        retryCount: enableRetries ? 0 : 0,
       };
 
-      logger.info("Processing receipt through OCR service", { userId, imageType, bufferSize: imageBuffer.length });
-
-      // Call OCR service
-      const response = await fetch(`${this.OCR_SERVICE_URL}/ocr`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(this.TIMEOUT_MS),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error("OCR service error", new Error(`${response.status}: ${errorText}`), { userId, status: response.status });
-        
-        if (response.status === 413) {
-          throw new Error("Image file too large. Please use a smaller image (max 10MB).");
-        } else if (response.status === 400) {
-          throw new Error("Invalid image format. Please check your file.");
-        } else if (response.status === 503) {
-          throw new Error("OCR service temporarily unavailable. Please try again later.");
-        } else if (response.status === 404) {
-          throw new Error("OCR service endpoint not found. Please check service configuration.");
-        } else {
-          throw new Error(`OCR processing failed: ${response.status} ${response.statusText}`);
-        }
-      }
-
-      const ocrResult = await response.json();
-
-      // Validate OCR response
-      const validatedResult = OCRResponseSchema.parse(ocrResult);
-
-      // Additional validation for business logic
-      if (!validatedResult.success) {
-        throw new Error(validatedResult.error_message || "OCR processing failed");
-      }
-
-      logger.info("OCR processing completed successfully", { 
-        userId, 
-        itemsCount: validatedResult.items?.length || 0,
-        processingTime: validatedResult.processing_time,
-        totalCarbonEmissions: validatedResult.total_carbon_emissions,
-      });
-
-      return validatedResult;
     } catch (error) {
-      logger.error("OCR service error", error instanceof Error ? error : new Error(String(error)), { userId });
+      const processingTime = Date.now() - startTime;
+      const ocrError = this.normalizeError(error);
       
-      if (error instanceof z.ZodError) {
-        throw new Error(`Invalid OCR response format: ${error.errors.map(e => e.message).join(", ")}`);
-      }
-      
-      if (error instanceof Error) {
-        throw error;
-      }
-      
-      throw new Error("OCR processing failed");
+      logger.error("OCR processing failed", ocrError, {
+        ...context,
+        processingTime,
+        errorCode: ocrError.code,
+        retryable: ocrError.retryable,
+      });
+
+      return {
+        success: false,
+        error: ocrError,
+        processingTime,
+        retryCount: 0,
+      };
     }
   }
 
   /**
-   * Process receipt image using upload endpoint (alternative method)
+   * Process receipt image using upload endpoint
    */
-  static async processReceiptImageUpload(
+  public async processReceiptImageUpload(
     imageBuffer: Buffer,
     imageType: string,
     fileName: string,
-    userId?: string
-  ): Promise<OCRResponse> {
+    options: OCRProcessingOptions = {}
+  ): Promise<OCRProcessingResult> {
+    const startTime = Date.now();
+    const { userId, requestId, enableRetries = true, validateHealth = true } = options;
+    
+    const context = { userId, requestId, imageType, fileName, bufferSize: imageBuffer.length };
+
     try {
-      // Validate file type
-      if (!imageType.startsWith("image/") && imageType !== "application/pdf") {
-        throw new Error("Invalid file type. Only images and PDFs are supported.");
+      logger.info("Starting OCR upload processing", context);
+
+      // Validate inputs
+      this.validateImageInput(imageBuffer, imageType);
+
+      // Check service health if enabled
+      if (validateHealth) {
+        await this.ensureServiceHealth();
       }
 
-      // Create FormData
-      const formData = new FormData();
-      const blob = new Blob([imageBuffer], { type: imageType });
-      formData.append("file", blob, fileName);
+      // Process with retry mechanism
+      const result = enableRetries 
+        ? await this.processUploadWithRetry(imageBuffer, imageType, fileName, context)
+        : await this.processUploadSingle(imageBuffer, imageType, fileName, context);
 
-      // Call OCR service upload endpoint
-      const response = await fetch(`${this.OCR_SERVICE_URL}/upload`, {
-        method: "POST",
-        body: formData,
-        signal: AbortSignal.timeout(this.TIMEOUT_MS),
+      const processingTime = Date.now() - startTime;
+      
+      logger.info("OCR upload processing completed successfully", {
+        ...context,
+        processingTime,
+        itemsCount: result.items?.length || 0,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error("OCR upload service error", new Error(`${response.status}: ${errorText}`), { userId, status: response.status });
-        
-        if (response.status === 413) {
-          throw new Error("Image file too large. Please use a smaller image.");
-        } else if (response.status === 400) {
-          throw new Error("Invalid image format. Please check your file.");
-        } else if (response.status === 503) {
-          throw new Error("OCR service temporarily unavailable. Please try again later.");
-        } else {
-          throw new Error(`OCR processing failed: ${response.status} ${response.statusText}`);
-        }
-      }
+      return {
+        success: true,
+        data: result,
+        processingTime,
+        retryCount: enableRetries ? 0 : 0,
+      };
 
-      const ocrResult = await response.json();
-
-      // Validate OCR response
-      const validatedResult = OCRResponseSchema.parse(ocrResult);
-
-      // Additional validation for business logic
-      if (!validatedResult.success) {
-        throw new Error(validatedResult.error_message || "OCR processing failed");
-      }
-
-      return validatedResult;
     } catch (error) {
-      logger.error("OCR upload service error", error instanceof Error ? error : new Error(String(error)), { userId });
+      const processingTime = Date.now() - startTime;
+      const ocrError = this.normalizeError(error);
       
-      if (error instanceof z.ZodError) {
-        throw new Error(`Invalid OCR response format: ${error.errors.map(e => e.message).join(", ")}`);
-      }
-      
-      if (error instanceof Error) {
-        throw error;
-      }
-      
-      throw new Error("OCR processing failed");
+      logger.error("OCR upload processing failed", ocrError, {
+        ...context,
+        processingTime,
+        errorCode: ocrError.code,
+      });
+
+      return {
+        success: false,
+        error: ocrError,
+        processingTime,
+        retryCount: 0,
+      };
     }
   }
 
   /**
-   * Check OCR service health
+   * Check OCR service health with timeout
    */
-  static async checkHealth(): Promise<boolean> {
+  public async checkHealth(): Promise<OCRHealthResponse> {
+    const context = { url: this.config.baseUrl };
+    
     try {
-      logger.info("Checking OCR service health", { url: this.OCR_SERVICE_URL });
+      logger.debug("Checking OCR service health", context);
       
-      const response = await fetch(`${this.OCR_SERVICE_URL}/health`, {
+      const response = await fetch(`${this.config.baseUrl}/health`, {
         method: "GET",
-        signal: AbortSignal.timeout(5000), // 5 second timeout for health check
-      });
-
-      logger.info("OCR health check response", { 
-        status: response.status, 
-        ok: response.ok,
-        url: this.OCR_SERVICE_URL 
+        signal: AbortSignal.timeout(this.config.healthCheckTimeoutMs),
       });
 
       if (!response.ok) {
-        const error = new Error(`OCR health check failed: ${response.status} ${response.statusText}`);
-        logger.error("OCR health check failed", error, { 
-          status: response.status, 
-          statusText: response.statusText,
-          url: this.OCR_SERVICE_URL 
-        });
-        return false;
+        throw new OCRServiceError(
+          `Health check failed: ${response.status} ${response.statusText}`,
+          'HEALTH_CHECK_FAILED',
+          response.status
+        );
       }
 
       const healthData = await response.json();
-      logger.info("OCR health check successful", { healthData });
+      logger.debug("OCR health check successful", { ...context, healthData });
       
-      return healthData.status === "healthy";
+      return healthData as OCRHealthResponse;
     } catch (error) {
-      logger.error("OCR health check error", error instanceof Error ? error : new Error(String(error)), { 
-        url: this.OCR_SERVICE_URL 
-      });
-      return false;
+      const ocrError = this.normalizeError(error);
+      logger.error("OCR health check error", ocrError, context);
+      throw ocrError;
     }
   }
 
   /**
    * Transform OCR items to receipt items format
    */
-  static transformOCRItemsToReceiptItems(ocrItems: OCRItem[]) {
+  public static transformOCRItemsToReceiptItems(ocrItems: OCRItem[]) {
     return ocrItems.map(item => ({
       name: item.name,
       quantity: item.quantity || 1,
@@ -231,7 +279,7 @@ export class OCRService {
   /**
    * Calculate total emissions from OCR items
    */
-  static calculateTotalEmissions(ocrItems: OCRItem[]): number {
+  public static calculateTotalEmissions(ocrItems: OCRItem[]): number {
     return ocrItems.reduce((total, item) => {
       return total + (item.carbon_emissions || 0);
     }, 0);
@@ -240,7 +288,7 @@ export class OCRService {
   /**
    * Create emissions breakdown by category
    */
-  static createEmissionsBreakdown(ocrItems: OCRItem[]) {
+  public static createEmissionsBreakdown(ocrItems: OCRItem[]) {
     const breakdown: Record<string, { count: number; totalEmissions: number; items: string[] }> = {};
     
     ocrItems.forEach(item => {
@@ -262,13 +310,11 @@ export class OCRService {
   /**
    * Validate OCR results
    */
-  static validateOCRResults(ocrResponse: OCRResponse): OCRResponse {
-    // Ensure all required fields are present
+  public static validateOCRResults(ocrResponse: OCRResponse): OCRResponse {
     if (!ocrResponse.success) {
-      throw new Error(ocrResponse.error_message || "OCR processing failed");
+      throw new OCRValidationError(ocrResponse.error_message || "OCR processing failed");
     }
 
-    // Validate items if present
     if (ocrResponse.items) {
       ocrResponse.items = ocrResponse.items.filter(item => 
         item.name && item.name.trim().length > 0
@@ -277,4 +323,285 @@ export class OCRService {
 
     return ocrResponse;
   }
-} 
+
+  // Private helper methods
+
+  /**
+   * Validate image input parameters
+   */
+  private validateImageInput(imageBuffer: Buffer, imageType: string): void {
+    if (!imageBuffer || imageBuffer.length === 0) {
+      throw new OCRValidationError("Empty image buffer provided", "imageBuffer");
+    }
+
+    if (imageBuffer.length > this.config.maxFileSizeBytes) {
+      throw new OCRValidationError(
+        `Image file too large. Maximum size is ${this.config.maxFileSizeBytes / (1024 * 1024)}MB`,
+        "imageBuffer"
+      );
+    }
+
+    if (!this.config.allowedMimeTypes.includes(imageType as any)) {
+      throw new OCRValidationError(
+        `Invalid file type. Allowed types: ${this.config.allowedMimeTypes.join(", ")}`,
+        "imageType"
+      );
+    }
+  }
+
+  /**
+   * Ensure OCR service is healthy
+   */
+  private async ensureServiceHealth(): Promise<void> {
+    const healthResponse = await this.checkHealth();
+    if (healthResponse.status !== 'healthy') {
+      throw new OCRServiceError(
+        "OCR service is not healthy",
+        'SERVICE_UNHEALTHY',
+        503,
+        true
+      );
+    }
+  }
+
+  /**
+   * Process image with retry mechanism
+   */
+  private async processWithRetry(
+    imageBuffer: Buffer,
+    imageType: string,
+    context: Record<string, any>
+  ): Promise<OCRResponse> {
+    let lastError: OCRServiceError | OCRValidationError;
+    
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
+      try {
+        return await this.processSingle(imageBuffer, imageType, context);
+      } catch (error) {
+        lastError = this.normalizeError(error);
+        
+        if (attempt === this.config.maxRetries || !this.isRetryableError(lastError)) {
+          throw lastError;
+        }
+
+        logger.warn("OCR processing attempt failed, retrying", {
+          ...context,
+          attempt: attempt + 1,
+          maxRetries: this.config.maxRetries,
+          error: lastError.message,
+        });
+
+        await this.delay(this.config.retryDelayMs * Math.pow(2, attempt));
+      }
+    }
+
+    throw lastError!;
+  }
+
+  /**
+   * Process image upload with retry mechanism
+   */
+  private async processUploadWithRetry(
+    imageBuffer: Buffer,
+    imageType: string,
+    fileName: string,
+    context: Record<string, any>
+  ): Promise<OCRResponse> {
+    let lastError: OCRServiceError | OCRValidationError;
+    
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
+      try {
+        return await this.processUploadSingle(imageBuffer, imageType, fileName, context);
+      } catch (error) {
+        lastError = this.normalizeError(error);
+        
+        if (attempt === this.config.maxRetries || !this.isRetryableError(lastError)) {
+          throw lastError;
+        }
+
+        logger.warn("OCR upload processing attempt failed, retrying", {
+          ...context,
+          attempt: attempt + 1,
+          maxRetries: this.config.maxRetries,
+          error: lastError.message,
+        });
+
+        await this.delay(this.config.retryDelayMs * Math.pow(2, attempt));
+      }
+    }
+
+    throw lastError!;
+  }
+
+  /**
+   * Process image using base64 endpoint
+   */
+  private async processSingle(
+    imageBuffer: Buffer,
+    imageType: string,
+    context: Record<string, any>
+  ): Promise<OCRResponse> {
+    const base64Image = imageBuffer.toString("base64");
+    const payload = {
+      image: base64Image,
+      image_type: imageType,
+    };
+
+    const response = await fetch(`${this.config.baseUrl}/ocr`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(this.config.timeoutMs),
+    });
+
+    return this.handleOCRResponse(response, context);
+  }
+
+  /**
+   * Process image using upload endpoint
+   */
+  private async processUploadSingle(
+    imageBuffer: Buffer,
+    imageType: string,
+    fileName: string,
+    context: Record<string, any>
+  ): Promise<OCRResponse> {
+    const formData = new FormData();
+    const blob = new Blob([imageBuffer], { type: imageType });
+    formData.append("file", blob, fileName);
+
+    const response = await fetch(`${this.config.baseUrl}/upload`, {
+      method: "POST",
+      body: formData,
+      signal: AbortSignal.timeout(this.config.timeoutMs),
+    });
+
+    return this.handleOCRResponse(response, context);
+  }
+
+  /**
+   * Handle OCR service response
+   */
+  private async handleOCRResponse(
+    response: Response,
+    context: Record<string, any>
+  ): Promise<OCRResponse> {
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw this.createServiceError(response.status, errorText);
+    }
+
+    const ocrResult = await response.json();
+    const transformedResult = this.transformPythonResponse(ocrResult);
+    const validatedResult = OCRResponseSchema.parse(transformedResult);
+
+    if (!validatedResult.success) {
+      throw new OCRValidationError(validatedResult.error_message || "OCR processing failed");
+    }
+
+    return validatedResult;
+  }
+
+  /**
+   * Transform Python service response to match our schema
+   */
+  private transformPythonResponse(pythonResponse: any): OCRResponse {
+    const items = (pythonResponse.items || []).map((item: any) => ({
+      name: item.name || "",
+      quantity: item.quantity || 1.0,
+      unit_price: item.unit_price || null,
+      total_price: item.total_price || null,
+      category: item.category || "processed",
+      subcategory: "",
+      brand: "",
+      carbon_emissions: item.carbon_emissions || 0,
+      confidence: item.confidence || 1.0,
+      estimated_weight_kg: null,
+      source: "ocr",
+    }));
+
+    return {
+      success: pythonResponse.success ?? true,
+      text: pythonResponse.text || "",
+      confidence: pythonResponse.confidence || 0.8,
+      items: items,
+      merchant: pythonResponse.merchant || "Unknown Merchant",
+      total: pythonResponse.total || null,
+      date: pythonResponse.date || null,
+      total_carbon_emissions: pythonResponse.total_carbon_emissions || 0,
+      processing_time: pythonResponse.processing_time || 0,
+      error_message: pythonResponse.error || null,
+      raw_ocr_data: [],
+    };
+  }
+
+  /**
+   * Create service error from HTTP response
+   */
+  private createServiceError(statusCode: number, errorText: string): OCRServiceError {
+    const isRetryable = statusCode >= 500 || statusCode === 429;
+    
+    switch (statusCode) {
+      case 400:
+        return new OCRServiceError("Invalid image format. Please check your file.", "INVALID_FORMAT", statusCode);
+      case 413:
+        return new OCRServiceError("Image file too large. Please use a smaller image.", "FILE_TOO_LARGE", statusCode);
+      case 429:
+        return new OCRServiceError("OCR service rate limit exceeded. Please try again later.", "RATE_LIMITED", statusCode, true);
+      case 503:
+        return new OCRServiceError("OCR service temporarily unavailable. Please try again later.", "SERVICE_UNAVAILABLE", statusCode, true);
+      case 404:
+        return new OCRServiceError("OCR service endpoint not found.", "ENDPOINT_NOT_FOUND", statusCode);
+      default:
+        return new OCRServiceError(
+          `OCR processing failed: ${statusCode} ${errorText}`,
+          "PROCESSING_FAILED",
+          statusCode,
+          isRetryable
+        );
+    }
+  }
+
+  /**
+   * Check if error is retryable
+   */
+  private isRetryableError(error: OCRServiceError | OCRValidationError): boolean {
+    if (error instanceof OCRServiceError) {
+      return error.retryable;
+    }
+    // OCRValidationError is never retryable
+    return false;
+  }
+
+  /**
+   * Normalize error to OCRServiceError or OCRValidationError
+   */
+  private normalizeError(error: unknown): OCRServiceError | OCRValidationError {
+    if (error instanceof OCRServiceError || error instanceof OCRValidationError) {
+      return error;
+    }
+
+    if (error instanceof z.ZodError) {
+      return new OCRValidationError(
+        `Invalid OCR response format: ${error.errors.map(e => e.message).join(", ")}`,
+        "VALIDATION_ERROR"
+      );
+    }
+
+    if (error instanceof Error) {
+      return new OCRServiceError(error.message, "UNKNOWN_ERROR");
+    }
+
+    return new OCRServiceError(String(error), "UNKNOWN_ERROR");
+  }
+
+  /**
+   * Delay execution for specified milliseconds
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+// Export singleton instance for backward compatibility
+export const ocrService = new OCRService(); 

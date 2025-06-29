@@ -52,16 +52,35 @@ export async function POST(request: NextRequest) {
     // Serialize any Prisma Decimal objects before sending to client
     const serializedData = serializePrismaResult(result.data);
 
+    // Map items for frontend
+    const items = (result.data?.ocrResult?.items || []).map((item: any) => ({
+      name: item.canonical_name || item.name,
+      category: item.category || 'unknown',
+      carbon_emissions: item.estimated_carbon_emissions_kg ?? item.carbon_emissions ?? 0,
+      confidence: item.confidence ?? 0.8,
+      source: item.source || '',
+      status: item.is_food_item === false ? 'Unknown' : 'Mapped',
+      estimated_weight_kg: item.estimated_weight_kg ?? null,
+      unit_price: item.unit_price ?? null,
+      total_price: item.total_price ?? null,
+    }));
+    logger.info('API: Returning mapped items to frontend', { items });
+
     logger.info("Receipt processing completed successfully", { 
       userId, 
       receiptId: serializedData?.receiptId,
       totalEmissions: serializedData?.totalEmissions,
-      itemsCount: serializedData?.itemsCount
+      itemsCount: items.length
     });
 
     return NextResponse.json({
       success: true,
-      data: serializedData,
+      data: {
+        ...serializedData,
+        items,
+        totalEmissions: serializedData?.totalEmissions ?? 0,
+        itemsCount: items.length,
+      },
     });
 
   } catch (error) {

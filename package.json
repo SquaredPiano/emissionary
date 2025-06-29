@@ -63,6 +63,7 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "framer-motion": "^12.19.2",
+    "fuse.js": "^7.1.0",
     "jest": "^30.0.3",
     "lodash.throttle": "^4.1.1",
     "lucide-react": "^0.522.0",

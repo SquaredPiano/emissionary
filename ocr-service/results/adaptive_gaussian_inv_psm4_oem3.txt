@@ -1,0 +1,8 @@
+Config: --psm 4 --oem 3
+Version: adaptive_gaussian_inv
+Char count: 29
+Word count: 5
+Number count: 12
+--------------------------------------------------
+> Hi Oosart cE
+(003338346485)

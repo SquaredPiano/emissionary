@@ -47,13 +47,13 @@ interface ActionableTipsProps {
 export function ActionableTips({ emissions }: ActionableTipsProps) {
   // Generate personalized tips based on emissions data
   const generatePersonalizedTips = () => {
-    if (!emissions?.data?.categoryBreakdown) {
+    if (!emissions?.categoryBreakdown) {
       return getFallbackTips();
     }
 
     const tips = [];
-    const breakdown = emissions.data.categoryBreakdown;
-    const totalEmissions = emissions.data.totalEmissions;
+    const breakdown = emissions.categoryBreakdown;
+    const totalEmissions = emissions.totalEmissions;
 
     // Tip for high meat consumption
     if (breakdown.meat && breakdown.meat.totalEmissions > totalEmissions * 0.3) {

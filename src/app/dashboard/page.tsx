@@ -163,6 +163,9 @@ export default async function DashboardPage({
     emissions = safeSerialize({
       totalEmissions: emissionsData.totalEmissions,
       totalReceipts: emissionsData.totalReceipts,
+      thisWeekEmissions: emissionsData.thisWeekEmissions,
+      weeklyAverage: emissionsData.weeklyAverage,
+      fourWeekTotal: emissionsData.fourWeekTotal,
       monthlyData: emissionsData.monthlyData,
       categoryBreakdown: emissionsData.categoryBreakdown,
       averageEmissionsPerReceipt: emissionsData.averageEmissionsPerReceipt,

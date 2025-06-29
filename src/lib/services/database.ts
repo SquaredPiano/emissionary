@@ -12,11 +12,19 @@ import {
 } from "@/lib/schemas";
 import { z } from "zod";
 
+/**
+ * Serialize Prisma results to remove Decimal objects
+ * This ensures only plain objects are passed to client components
+ */
+function serializePrismaResult<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 export class DatabaseService {
   // User operations
   static async getUserByClerkId(clerkId: string) {
     try {
-      return await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { clerkId },
         include: {
           receipts: {
@@ -27,6 +35,9 @@ export class DatabaseService {
           },
         },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(user);
     } catch (error) {
       logger.error("Error fetching user by clerk ID", error instanceof Error ? error : new Error(String(error)), { clerkId });
       throw new Error("Failed to fetch user");
@@ -35,7 +46,7 @@ export class DatabaseService {
 
   static async createUser(clerkId: string, email: string, firstName?: string, lastName?: string) {
     try {
-      return await prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           clerkId,
           email,
@@ -43,6 +54,9 @@ export class DatabaseService {
           lastName,
         },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(user);
     } catch (error) {
       logger.error("Error creating user", error instanceof Error ? error : new Error(String(error)), { clerkId, email });
       throw new Error("Failed to create user");
@@ -51,10 +65,13 @@ export class DatabaseService {
 
   static async updateUser(clerkId: string, data: Partial<{ firstName: string; lastName: string; avatar: string; bio: string; location: string }>) {
     try {
-      return await prisma.user.update({
+      const user = await prisma.user.update({
         where: { clerkId },
         data,
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(user);
     } catch (error) {
       logger.error("Error updating user", error instanceof Error ? error : new Error(String(error)), { clerkId });
       throw new Error("Failed to update user");
@@ -68,7 +85,7 @@ export class DatabaseService {
     items: CreateReceiptItem[]
   ) {
     try {
-      return await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         // Validate receipt data
         const validatedReceipt = CreateReceiptSchema.parse(receiptData);
         
@@ -106,6 +123,9 @@ export class DatabaseService {
           items: receiptItems,
         };
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error creating receipt with items", error instanceof Error ? error : new Error(String(error)), { userId });
       if (error instanceof z.ZodError) {
@@ -117,12 +137,15 @@ export class DatabaseService {
 
   static async getReceiptById(receiptId: string, userId: string) {
     try {
-      return await prisma.receipt.findFirst({
+      const receipt = await prisma.receipt.findFirst({
         where: { id: receiptId, userId },
         include: {
           receiptItems: true,
         },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(receipt);
     } catch (error) {
       logger.error("Error fetching receipt", error instanceof Error ? error : new Error(String(error)), { receiptId, userId });
       throw new Error("Failed to fetch receipt");
@@ -185,7 +208,7 @@ export class DatabaseService {
         prisma.receipt.count({ where: whereClause }),
       ]);
 
-      return {
+      const result = {
         receipts,
         pagination: {
           ...validatedPagination,
@@ -193,6 +216,9 @@ export class DatabaseService {
           totalPages: Math.ceil(total / validatedPagination.limit),
         },
       };
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error fetching receipts", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch receipts");
@@ -201,10 +227,13 @@ export class DatabaseService {
 
   static async updateReceipt(receiptId: string, userId: string, data: Partial<CreateReceipt>) {
     try {
-      return await prisma.receipt.updateMany({
+      const result = await prisma.receipt.updateMany({
         where: { id: receiptId, userId },
         data,
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error updating receipt", error instanceof Error ? error : new Error(String(error)), { receiptId, userId });
       throw new Error("Failed to update receipt");
@@ -213,12 +242,15 @@ export class DatabaseService {
 
   static async deleteReceipt(receiptId: string, userId: string) {
     try {
-      return await prisma.receipt.deleteMany({
+      const result = await prisma.receipt.deleteMany({
         where: { id: receiptId, userId },
       });
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error deleting receipt", error instanceof Error ? error : new Error(String(error)), { receiptId, userId });
-      throw new Error("Failed to delete receipt");
+      throw new Error("Failed to update receipt");
     }
   }
 
@@ -322,13 +354,16 @@ export class DatabaseService {
       // Calculate average emissions per receipt
       const averageEmissions = receipts.length > 0 ? totalEmissions / receipts.length : 0;
 
-      return {
+      const result = {
         totalEmissions,
         averageEmissions,
         categoryEmissions,
         receiptCount: receipts.length,
         itemCount: receipts.reduce((sum, receipt) => sum + receipt.receiptItems.length, 0),
       };
+      
+      // Serialize to remove Decimal objects
+      return serializePrismaResult(result);
     } catch (error) {
       logger.error("Error fetching analytics", error instanceof Error ? error : new Error(String(error)), { userId });
       throw new Error("Failed to fetch analytics");

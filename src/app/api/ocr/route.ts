@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { OCRService } from '@/lib/services/ocr';
+import { ocrService } from '@/lib/services/ocr';
 import { OCRResponseSchema } from '@/lib/schemas';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
     const imageBuffer = Buffer.from(validatedBody.image, 'base64');
 
     // Process through OCR service
-    const ocrResult = await OCRService.processReceiptImage(
+    const ocrResult = await ocrService.processReceiptImage(
       imageBuffer,
       validatedBody.image_type,
-      validatedBody.user_id
+      { userId: validatedBody.user_id }
     );
 
     // Validate OCR response
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     // Health check endpoint
-    const isHealthy = await OCRService.checkHealth();
+    const isHealthy = await ocrService.checkHealth();
     
     return NextResponse.json({
       success: true,

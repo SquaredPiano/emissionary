@@ -51,13 +51,13 @@ interface RecentActivityProps {
 
 export function RecentActivity({ receipts, highlightedReceiptId }: RecentActivityProps) {
   // Use real data if available, otherwise fallback to mock data
-  const data = receipts?.data?.receipts ? 
-    receipts.data.receipts.map((receipt: any) => ({
+  const data = receipts?.receipts ? 
+    receipts.receipts.map((receipt: any) => ({
       id: receipt.id,
       merchant: receipt.merchant,
       date: receipt.date,
       total: Number(receipt.total),
-      emissions: receipt.emissionsLog ? Number(receipt.emissionsLog.totalCO2) : 0,
+      emissions: Number(receipt.totalCarbonEmissions || 0),
       items: receipt.receiptItems?.length || 0,
       status: 'processed'
     })) : 

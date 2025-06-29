@@ -42,19 +42,19 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function CategoryBreakdown({ emissions }: CategoryBreakdownProps) {
   // Use real data if available, otherwise fallback to mock data
-  const data = emissions?.data?.categoryBreakdown ? 
-    Object.entries(emissions.data.categoryBreakdown).map(([category, data]: [string, any]) => ({
+  const data = emissions?.categoryBreakdown ? 
+    Object.entries(emissions.categoryBreakdown).map(([category, data]: [string, any]) => ({
       name: category.charAt(0).toUpperCase() + category.slice(1),
-      value: Math.round((data.totalEmissions / emissions.data.totalEmissions) * 100),
+      value: Math.round((data.totalEmissions / emissions.totalEmissions) * 100),
       color: getCategoryColor(category)
     })).filter(item => item.value > 0) : 
     getFallbackData();
 
   // Ensure 'Unknown' category is included if present in the breakdown
   let hasUnknown = false;
-  if (emissions?.data?.categoryBreakdown && emissions.data.categoryBreakdown.unknown) {
-    const unknownData = emissions.data.categoryBreakdown.unknown;
-    const unknownValue = Math.round((unknownData.totalEmissions / emissions.data.totalEmissions) * 100);
+  if (emissions?.categoryBreakdown && emissions.categoryBreakdown.unknown) {
+    const unknownData = emissions.categoryBreakdown.unknown;
+    const unknownValue = Math.round((unknownData.totalEmissions / emissions.totalEmissions) * 100);
     if (unknownValue > 0 && !data.some(item => item.name === 'Unknown')) {
       data.push({ name: 'Unknown', value: unknownValue, color: '#6b7280' });
       hasUnknown = true;
