@@ -8,6 +8,14 @@ import { z } from "zod";
 import { searchFoodByName, getEmissionsByName } from '@/lib/data/food-dataset';
 import { NON_FOOD_KEYWORDS } from "@/lib/utils/constants";
 
+function canonicalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
  * Receipt Processing Configuration Interface
  */
@@ -384,109 +392,88 @@ export class ReceiptProcessingService {
   private async extractFallbackItems(ocrText: string): Promise<any[]> {
     try {
       const items: any[] = [];
-      
-      // Extract items with price patterns (e.g., "MILK 2.99", "BREAD 3.50")
-      const pricePattern = /([A-Za-z\s]+)\s+(\d+\.?\d*)/g;
-      let match;
-      
-      while ((match = pricePattern.exec(ocrText)) !== null) {
-        const itemName = match[1].trim();
-        const price = parseFloat(match[2]);
-        
-        if (itemName.length > 2 && price > 0 && price < 1000) {
-          // Clean the item name
-          let cleanName = itemName.replace(/[^\w\s]/g, '').trim();
-          
-          // Skip if it's clearly not a food item
-          if (NON_FOOD_KEYWORDS.some(keyword => 
-            cleanName.toLowerCase().includes(keyword.toLowerCase())
-          )) {
-            continue;
+      const fallbackEmissionsMap: Record<string, number> = {};
+      const lines = ocrText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+      for (const line of lines) {
+        if (NON_FOOD_KEYWORDS.some(keyword => line.toLowerCase().includes(keyword))) continue;
+        const priceMatches = Array.from(line.matchAll(/(\d+\.\d{2})/g));
+        if (priceMatches.length === 0) continue;
+        const lastMatch = priceMatches[priceMatches.length - 1];
+        const price = parseFloat(lastMatch[1]);
+        if (isNaN(price) || price <= 0 || price > 1000) continue;
+        let itemName = line.slice(0, lastMatch.index).replace(/[^\w\s\-\&\(\)\,\.]/g, '').trim();
+        itemName = itemName.replace(/\d{4,}$/g, '').replace(/\s{2,}/g, ' ').trim();
+        if (itemName.length < 2) continue;
+        const dbMatchArr = await searchFoodByName(itemName, 1);
+        const dbMatch = dbMatchArr && Array.isArray(dbMatchArr) ? dbMatchArr[0] : undefined;
+        let category = 'other';
+        let emissions = 0;
+        let confidence = 0.6;
+        let source = 'fallback';
+        let canonicalName = dbMatch ? dbMatch.food.toLowerCase() : canonicalizeName(itemName);
+        if (dbMatch) {
+          emissions = dbMatch.emissions;
+          category = dbMatch.category || 'other';
+          confidence = 0.8;
+          source = 'database';
+          itemName = dbMatch.food;
+        } else {
+          if (fallbackEmissionsMap[canonicalName] === undefined) {
+            fallbackEmissionsMap[canonicalName] = Math.random() * 5 + 0.1;
           }
-          
-          // Try to find a match in the food database
-          const dbMatchArr = await searchFoodByName(cleanName);
-          const dbMatch = dbMatchArr && Array.isArray(dbMatchArr) ? dbMatchArr[0] : undefined;
-          let category = 'other';
-          let emissions = 0;
-          let confidence = 0.6;
-          let source = 'fallback';
-          let quantity = 1;
-          
-          if (dbMatch) {
-            // Use database values
-            emissions = dbMatch.emissions;
-            category = dbMatch.category || 'other';
-            confidence = 0.8;
-            source = 'database';
-            // Use the database name as the clean name
-            cleanName = dbMatch.food;
-          } else {
-            // Generate random emissions for demo purposes
-            emissions = Math.random() * 5 + 0.1; // Random between 0.1 and 5.1 kg CO2e
-            
-            // Determine category based on item name if no database match
-            const lowerName = cleanName.toLowerCase();
-            
-            if (lowerName.includes('food') || lowerName.includes('cooked') || lowerName.includes('hot')) {
-              category = 'prepared_food';
-            } else if (lowerName.includes('duck') || lowerName.includes('chicken') || lowerName.includes('beef') || lowerName.includes('pork')) {
-              category = 'meat';
-            } else if (lowerName.includes('milk') || lowerName.includes('cheese') || lowerName.includes('yogurt')) {
-              category = 'dairy';
-            } else if (lowerName.includes('bread') || lowerName.includes('rice') || lowerName.includes('noodle') || lowerName.includes('spaghetti')) {
-              category = 'bakery';
-            } else if (lowerName.includes('apple') || lowerName.includes('banana') || lowerName.includes('orange') || lowerName.includes('strawberry')) {
-              category = 'produce';
-            } else if (lowerName.includes('water') || lowerName.includes('soda') || lowerName.includes('juice')) {
-              category = 'beverage';
-            } else if (lowerName.includes('chip') || lowerName.includes('snack')) {
-              category = 'snack';
-            }
-          }
-
-          const basicItem = {
-            name: cleanName,
-            canonical_name: cleanName.toLowerCase(),
-            quantity: quantity,
-            total_price: price,
-            category,
-            carbon_emissions: emissions * quantity,
-            confidence,
-            is_food: true,
-            source,
-            status: 'processed',
-          };
-          items.push(basicItem);
+          emissions = fallbackEmissionsMap[canonicalName];
         }
+        items.push({
+          name: itemName,
+          canonical_name: canonicalName,
+          quantity: 1,
+          total_price: price,
+          category,
+          carbon_emissions: emissions,
+          confidence,
+          is_food: true,
+          source,
+          status: 'processed',
+        });
       }
-      
-      // If no items found with price pattern, try to extract any text that looks like food
+      // Fallback: food keyword matching for lines with no price
       if (items.length === 0) {
-        const words = ocrText.split(/\s+/).filter(word => word.length > 2);
-        const foodKeywords = ['milk', 'bread', 'cheese', 'apple', 'banana', 'chicken', 'beef', 'rice', 'pasta', 'soup', 'cereal', 'yogurt', 'butter', 'eggs', 'meat', 'fish', 'vegetable', 'fruit', 'potato', 'tomato', 'onion', 'carrot', 'lettuce', 'spinach', 'broccoli', 'cauliflower', 'pepper', 'cucumber', 'mushroom', 'garlic', 'ginger', 'lemon', 'lime', 'orange', 'grape', 'strawberry', 'blueberry', 'raspberry', 'blackberry', 'peach', 'pear', 'plum', 'cherry', 'grapefruit', 'pineapple', 'mango', 'kiwi', 'avocado', 'coconut', 'olive', 'almond', 'walnut', 'peanut', 'cashew', 'pistachio', 'sunflower', 'pumpkin', 'sesame', 'flax', 'chia', 'quinoa', 'oat', 'wheat', 'corn', 'barley', 'rye', 'sorghum', 'millet', 'buckwheat', 'amaranth', 'teff', 'spelt', 'kamut', 'farro', 'bulgur', 'couscous', 'polenta', 'grits', 'hominy', 'tortilla', 'pita', 'naan', 'bagel', 'croissant', 'muffin', 'donut', 'cookie', 'cake', 'pie', 'pastry', 'biscuit', 'cracker', 'pretzel', 'popcorn', 'chips', 'nuts', 'seeds', 'dried', 'canned', 'frozen', 'fresh', 'organic', 'natural', 'whole', 'grain', 'white', 'brown', 'wild', 'basmati', 'jasmine', 'arborio', 'carnaroli', 'vialone', 'nano', 'baldo', 'pearl', 'black', 'red', 'green', 'yellow', 'purple', 'orange', 'pink', 'blue', 'indigo', 'violet', 'rainbow', 'heirloom', 'baby', 'mini', 'large', 'medium', 'small', 'jumbo', 'extra', 'super', 'premium', 'select', 'choice', 'prime', 'grade', 'a', 'b', 'c', 'd', 'f', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        
-        for (const word of words) {
-          const cleanWord = word.toLowerCase().replace(/[^\w]/g, '');
-          if (foodKeywords.some(keyword => cleanWord.includes(keyword) || keyword.includes(cleanWord))) {
-            const basicItem = {
-              name: word,
-              canonical_name: cleanWord,
+        const foodKeywords = ['milk','bread','cheese','apple','banana','chicken','beef','rice','pasta','soup','cereal','yogurt','butter','eggs','meat','fish','vegetable','fruit','potato','tomato','onion','carrot','lettuce','spinach','broccoli','cauliflower','pepper','cucumber','mushroom','garlic','ginger','lemon','lime','orange','grape','strawberry','blueberry','raspberry','blackberry','peach','pear','plum','cherry','grapefruit','pineapple','mango','kiwi','avocado','coconut','olive','almond','walnut','peanut','cashew','pistachio','sunflower','pumpkin','sesame','flax','chia','quinoa','oat','wheat','corn','barley','rye','sorghum','millet','buckwheat','amaranth','teff','spelt','kamut','farro','bulgur','couscous','polenta','grits','hominy','tortilla','pita','naan','bagel','croissant','muffin','donut','cookie','cake','pie','pastry','biscuit','cracker','pretzel','popcorn','chips','nuts','seeds','dried','canned','frozen','fresh','organic','natural','whole','grain','white','brown','wild','basmati','jasmine','arborio','carnaroli','vialone','nano','baldo','pearl','black','red','green','yellow','purple','orange','pink','blue','indigo','violet','rainbow','heirloom','baby','mini','large','medium','small','jumbo','extra','super','premium'];
+        for (const line of lines) {
+          const cleanLine = canonicalizeName(line);
+          if (foodKeywords.some(keyword => cleanLine.includes(keyword))) {
+            const dbMatchArr = await searchFoodByName(line, 1);
+            const dbMatch = dbMatchArr && Array.isArray(dbMatchArr) ? dbMatchArr[0] : undefined;
+            let emissions = 0;
+            let canonicalName = dbMatch ? dbMatch.food.toLowerCase() : cleanLine;
+            let itemName = dbMatch ? dbMatch.food : line;
+            let category = dbMatch ? dbMatch.category || 'other' : 'other';
+            let confidence = dbMatch ? 0.8 : 0.4;
+            let source = dbMatch ? 'database' : 'fallback';
+            if (!dbMatch) {
+              if (fallbackEmissionsMap[canonicalName] === undefined) {
+                fallbackEmissionsMap[canonicalName] = Math.random() * 3 + 0.1;
+              }
+              emissions = fallbackEmissionsMap[canonicalName];
+            } else {
+              emissions = dbMatch.emissions;
+            }
+            items.push({
+              name: itemName,
+              canonical_name: canonicalName,
               quantity: 1,
               total_price: 0,
-              category: 'other',
-              carbon_emissions: Math.random() * 3 + 0.1, // Random between 0.1 and 3.1 kg CO2e
-              confidence: 0.4,
+              category,
+              carbon_emissions: emissions,
+              confidence,
               is_food: true,
-              source: 'fallback',
+              source,
               status: 'processed',
-            };
-            items.push(basicItem);
+            });
           }
         }
       }
-      
-      // FINAL fallback: if still empty, push a dummy item
+      // Final fallback: dummy item
       if (items.length === 0 && ocrText && ocrText.trim().length > 0) {
         items.push({
           name: ocrText.trim().slice(0, 32) + (ocrText.length > 32 ? '...' : ''),
