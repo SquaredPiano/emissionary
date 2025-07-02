@@ -1,267 +1,101 @@
-# 🌱 Emissionary
+# Emissionary
 
-**Carbon emissions tracking from grocery receipts using OCR and AI**
+A carbon emissions tracking application that analyzes grocery receipts using OCR and AI to help users understand their environmental impact.
 
-## 🚀 Quick MVP Start (No Authentication Required)
+## Overview
 
-Want to try the system immediately? We've created a simplified MVP version that works without authentication:
+Emissionary is a full-stack web application that processes grocery receipts to calculate carbon emissions. It uses OCR technology to extract items from receipt images, then calculates emissions using a comprehensive food database. The app includes gamification features, competition elements, and detailed analytics to encourage sustainable shopping habits.
 
-### 1. Start the MVP
-```bash
-./scripts/start-mvp.sh
-```
+## Features
 
-This script will:
-- Kill any processes on ports 3000 and 8000
-- Start the OCR service on port 8000
-- Start the Next.js app on port 3000
-- Install dependencies if needed
+### Core Functionality
+- **Receipt Upload & Processing**: Drag-and-drop interface for uploading receipt images
+- **OCR Text Extraction**: AI-powered text recognition using PaddleOCR
+- **Emissions Calculation**: Carbon footprint analysis using food production data
+- **Item Categorization**: Automatic classification of food items by type
+- **Data Visualization**: Charts and graphs showing emissions trends and breakdowns
 
-### 2. Access the MVP
-- **MVP Upload Page**: http://localhost:3000/mvp-upload
-- **Home Page**: http://localhost:3000
-- **OCR Service Health**: http://localhost:8000/health
-- **Last OCR Result**: http://localhost:8000/ocr/last
+### Gamification & Competition
+- **Experience Points**: Earn XP for uploading receipts and making green choices
+- **Achievement System**: Badges for milestones like streaks, total uploads, and low emissions
+- **Leaderboards**: Compete with other users on emissions reduction
+- **Streak Tracking**: Monitor consecutive days of receipt uploads
+- **Level Progression**: Level up based on total experience points
 
-### 3. Test the System
-```bash
-node test-mvp.js
-```
+### Analytics & Insights
+- **Dashboard**: Overview of total emissions, trends, and comparisons
+- **Category Breakdown**: See which food types contribute most to your footprint
+- **Historical Data**: Track emissions over time with detailed charts
+- **Comparison Tools**: Compare your emissions with averages
+- **Actionable Tips**: Personalized recommendations for reducing emissions
 
-### 4. Upload a Receipt
-1. Go to http://localhost:3000/mvp-upload
-2. Upload a receipt image (PNG, JPG, JPEG)
-3. Click "Process Receipt"
-4. View the carbon emissions analysis
+### User Management
+- **Authentication**: Secure login using Clerk
+- **User Profiles**: Personal dashboards and progress tracking
+- **Receipt History**: Complete history of uploaded receipts
+- **Settings Management**: Customize preferences and goals
 
-### 5. Stop the Services
-Press `Ctrl+C` in the terminal where you ran the start script.
+## Tech Stack
 
----
+### Frontend
+- **Next.js 15**: React framework with App Router
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first styling
+- **shadcn/ui**: Component library
+- **Framer Motion**: Animations and transitions
+- **Recharts**: Data visualization
+- **Clerk**: Authentication and user management
 
-## 📋 Full System Overview
+### Backend
+- **Python FastAPI**: OCR service backend
+- **PaddleOCR**: Text extraction from images
+- **Groq AI**: Enhanced item parsing and emissions estimation
+- **PostgreSQL**: Database (via Supabase)
+- **Prisma**: Database ORM
 
-# Emissionary - Carbon Emission Tracking App
+### Infrastructure
+- **Supabase**: Database hosting and management
+- **UploadThing**: File upload handling
+- **Vercel**: Frontend deployment
 
-A full-stack application for tracking carbon emissions from receipts using OCR and AI.
-
-## 🚀 Quick Start Guide
-
-### Prerequisites
-- Node.js 18+ 
-- Python 3.10+
-- pnpm (recommended) or npm
-- Homebrew (for macOS)
-
-### 1. Clone and Setup
-```bash
-git clone <your-repo-url>
-cd emissionary
-```
-
-### 2. Install Dependencies
-
-#### Frontend (Next.js)
-```bash
-pnpm install
-```
-
-#### Backend (Python OCR Service)
-```bash
-cd ocr-service
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 3. Install System Dependencies (macOS)
-```bash
-brew install tesseract
-```
-
-### 4. Start the Services
-
-#### Terminal 1: Python OCR Service
-```bash
-cd ocr-service
-source venv/bin/activate
-python start.py
-```
-**Expected output:** `INFO: Uvicorn running on http://0.0.0.0:8000`
-
-#### Terminal 2: Next.js Frontend
-```bash
-cd emissionary  # Back to project root
-pnpm dev
-```
-**Expected output:** `Ready - started server on 0.0.0.0:3000`
-
-### 5. Verify Everything is Working
-
-#### Test OCR Service
-```bash
-curl http://127.0.0.1:8000/health
-```
-**Expected output:** `{"status":"healthy","service":"OCR-PaddleOCR","groq_configured":true}`
-
-#### Test Next.js API
-```bash
-curl http://localhost:3000/api/ocr
-```
-**Expected output:** `{"success":true,"data":{"status":"healthy","service":"OCR-PaddleOCR","timestamp":"..."}}`
-
-#### Open the Application
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- OCR API: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Next.js       │    │   Python OCR    │    │   Supabase      │
-│   Frontend      │◄──►│   Service       │    │   Database      │
-│   (Port 3000)   │    │   (Port 8000)   │    │   (External)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-Create a `.env.local` file in the project root:
-
-```env
-# OCR Service
-OCR_SERVICE_URL=http://127.0.0.1:8000
-
-# Database (Supabase)
-DATABASE_URL=your_supabase_database_url
-
-# Authentication (Clerk)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
-CLERK_SECRET_KEY=your_clerk_secret
-
-# Optional: Groq API for enhanced OCR
-GROQ_API_KEY=your_groq_api_key
-```
-
-## 🐛 Troubleshooting
-
-### OCR Service Won't Start
-1. **Port already in use:**
-   ```bash
-   lsof -i :8000
-   kill -9 <PID>
-   ```
-
-2. **Missing dependencies:**
-   ```bash
-   cd ocr-service
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-3. **Tesseract not found:**
-   ```bash
-   brew install tesseract  # macOS
-   # or
-   sudo apt-get install tesseract-ocr  # Ubuntu
-   ```
-
-### Next.js Can't Connect to OCR Service
-1. **Check if OCR service is running:**
-   ```bash
-   curl http://127.0.0.1:8000/health
-   ```
-
-2. **Verify environment variable:**
-   ```bash
-   echo $OCR_SERVICE_URL
-   ```
-
-3. **Restart both services** in the correct order:
-   - Start OCR service first
-   - Then start Next.js
-
-### Database Issues
-1. **Generate Prisma client:**
-   ```bash
-   pnpm db:generate
-   ```
-
-2. **Push schema changes:**
-   ```bash
-   pnpm db:push
-   ```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 emissionary/
 ├── src/
-│   ├── app/                 # Next.js app router
-│   ├── components/          # React components
-│   └── lib/                # Utilities and services
-├── ocr-service/            # Python OCR microservice
-├── prisma/                # Database schema
-└── public/                # Static assets
+│   ├── app/                    # Next.js app router pages
+│   │   ├── dashboard/          # Main dashboard
+│   │   ├── upload/            # Receipt upload interface
+│   │   ├── competition/       # Gamification features
+│   │   ├── history/           # Receipt history
+│   │   ├── charts/            # Analytics and visualizations
+│   │   └── settings/          # User settings
+│   ├── components/            # React components
+│   │   ├── dashboard/         # Dashboard-specific components
+│   │   ├── upload/            # Upload interface components
+│   │   ├── competition/       # Gamification components
+│   │   └── ui/                # Reusable UI components
+│   ├── lib/                   # Utilities and services
+│   │   ├── services/          # Business logic services
+│   │   ├── actions/           # Server actions
+│   │   └── utils/             # Helper functions
+│   └── styles/                # Global styles
+├── ocr-service/               # Python OCR microservice
+│   ├── app.py                 # FastAPI application
+│   ├── main.py                # Service entry point
+│   └── requirements.txt       # Python dependencies
+├── prisma/                    # Database schema and migrations
+└── public/                    # Static assets
 ```
 
-## 🚀 Deployment
-
-### OCR Service
-- Deploy to any Python hosting service (Railway, Render, etc.)
-- Set environment variables
-- Update `OCR_SERVICE_URL` in Next.js
-
-### Next.js Frontend
-- Deploy to Vercel, Netlify, or similar
-- Set all environment variables
-- Ensure OCR service is accessible
-
-## 📝 API Endpoints
-
-### OCR Service (Python)
-- `GET /health` - Health check
-- `POST /ocr` - Process receipt image
-- `POST /upload` - Upload receipt file
-
-### Next.js API
-- `GET /api/ocr` - Health check
-- `POST /api/ocr` - Process receipt
-- `POST /api/calculate-emissions` - Calculate emissions
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
-
-## ✨ Features
-
-- **📸 Receipt Upload**: Drag & drop interface for easy receipt upload
-- **🔍 OCR Processing**: AI-powered text extraction from receipt images
-- **🌍 Carbon Calculations**: Accurate emissions calculations using Canadian government data
-- **📊 Data Visualization**: Beautiful charts showing emissions trends and breakdowns
-- **🇨🇦 Canadian Focus**: Compare your emissions with Canadian averages
-- **🔐 Secure Authentication**: Built-in user management with Clerk
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-
 - Node.js 20+
-- Python 3.8+ (for OCR service)
+- Python 3.8+
 - PostgreSQL database (Supabase recommended)
 
 ### 1. Clone and Setup
-
 ```bash
 git clone <repository-url>
 cd emissionary
@@ -269,9 +103,7 @@ pnpm install
 ```
 
 ### 2. Environment Configuration
-
 Create a `.env.local` file:
-
 ```env
 # Database
 DATABASE_URL="your-supabase-database-url"
@@ -284,12 +116,11 @@ CLERK_SECRET_KEY="your-clerk-secret-key"
 # OCR Service
 OCR_SERVICE_URL="http://localhost:8000"
 
-# OpenAI (optional, for enhanced parsing)
-OPENAI_API_KEY="your-openai-api-key"
+# Optional: Enhanced AI features
+GROQ_API_KEY="your-groq-api-key"
 ```
 
 ### 3. Database Setup
-
 ```bash
 # Generate Prisma client
 pnpm db:generate
@@ -298,16 +129,7 @@ pnpm db:generate
 pnpm db:push
 ```
 
-### 4. Start the Development Server
-
-```bash
-pnpm dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000) to see the application.
-
-### 5. OCR Service Setup
-
+### 4. OCR Service Setup
 ```bash
 cd ocr-service
 python -m venv venv
@@ -316,148 +138,134 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The OCR service will be available at [http://localhost:8000](http://localhost:8000).
+### 5. Start Development Server
+```bash
+pnpm dev
+```
 
-## 📊 Database Schema
+Visit [http://localhost:3000](http://localhost:3000) to access the application.
 
-The application uses the following main tables:
+## Database Schema
 
-- **users**: User profiles and authentication data
-- **receipts**: Receipt metadata (merchant, total, date, etc.)
-- **receipt_items**: Individual items from receipts
-- **emissions_logs**: Carbon footprint calculations and breakdowns
+### Core Tables
+- **users**: User profiles, authentication data, and gamification stats
+- **receipts**: Receipt metadata (merchant, total, date, emissions)
+- **receipt_items**: Individual items from receipts with emissions data
+- **badges**: Available achievements and their requirements
+- **user_achievements**: User progress towards badges
+- **streaks**: Tracking of user streaks (uploads, green choices)
 
-## 🔧 API Endpoints
+### Key Features
+- **Gamification Fields**: Level, experience, points, streaks
+- **Emissions Tracking**: Total and per-item carbon emissions
+- **Achievement System**: Badge requirements and progress tracking
+- **Streak Management**: Multiple streak types with current/longest tracking
 
-### OCR Processing
-- `POST /api/ocr` - Process receipt images and extract text/items
+## API Endpoints
 
-### Emissions Calculation
-- `POST /api/calculate-emissions` - Calculate carbon footprint from items
+### Frontend API Routes
+- `POST /api/receipts/process` - Process uploaded receipt images
+- `GET /api/emissions/stats` - Get user emissions statistics
+- `POST /api/competition/leaderboard` - Get competition rankings
+- `POST /api/gamification/leaderboard` - Get gamification rankings
 
-### Database Operations
-- All database operations are handled through Prisma client
+### OCR Service Endpoints
+- `POST /ocr` - Process receipt images with OCR
+- `GET /health` - Service health check
+- `POST /upload` - Direct file upload endpoint
 
-## 📈 Emissions Data
+## Gamification System
 
-The application uses comprehensive emissions factors based on:
+### Experience Points
+- **Base Upload**: 10 XP per receipt
+- **Green Choice Bonus**: +5 XP for low-emission receipts (< 5kg CO₂e)
+- **Green Week Bonus**: +10 XP for weeks under 50kg CO₂e
+- **Badge Rewards**: 10-500 XP depending on badge rarity
+- **Level Up Bonus**: +50 XP for reaching new levels
 
-- **Canadian Government Data**: Official emissions statistics
-- **FAO Database**: Global food production emissions
-- **Category-based Calculations**: Detailed breakdown by food type
+### Achievement Categories
+- **Upload Milestones**: First upload, upload streaks, total receipts
+- **Emissions Goals**: Low emissions weeks, green choices
+- **Engagement**: Early adopter, perfect weeks
+- **Progress**: Total emissions milestones
 
-### Supported Categories
+### Competition Features
+- **Leaderboards**: Ranked by points, level, and streaks
+- **Real-time Updates**: Live competition data
+- **Achievement Tracking**: Automatic progress monitoring
+- **Streak Bonuses**: Rewards for consistent engagement
 
-- **Meat & Dairy**: Beef, pork, chicken, milk, cheese, eggs
-- **Seafood**: Fish, shrimp, salmon
-- **Grains**: Wheat, rice, corn, oats
-- **Fruits & Vegetables**: Apples, bananas, tomatoes, potatoes
-- **Nuts & Seeds**: Almonds, walnuts, peanuts
-- **Beverages**: Coffee, tea, juice
-- **Processed Foods**: Bread, pasta, chocolate, cereal
-- **Snacks & Condiments**: Cookies, candy, ketchup, oils
+## Development
 
-## 🎨 UI Components
+### Available Scripts
+```bash
+# Development
+pnpm dev                    # Start Next.js development server
+pnpm build                  # Build for production
+pnpm start                  # Start production server
 
-### Dashboard Features
+# Database
+pnpm db:generate           # Generate Prisma client
+pnpm db:push               # Push schema changes
+pnpm db:studio             # Open Prisma Studio
+pnpm db:seed               # Seed database with initial data
 
-- **Stats Cards**: Total receipts, emissions, comparison with average
-- **Emissions Timeline**: Line chart showing trends over time
-- **Category Breakdown**: Pie chart of emissions by food category
-- **Comparison Chart**: Bar chart comparing user vs Canadian average
-- **Recent Receipts**: List of latest uploads with emissions data
+# OCR Service
+pnpm ocr:install           # Install OCR dependencies
+pnpm ocr:start             # Start OCR service
+pnpm ocr:health            # Check OCR service health
 
-### Upload Flow
+# Testing
+pnpm test                  # Run test suite
+pnpm lint                  # Run ESLint
+pnpm prettier              # Format code
+```
 
-1. **Drag & Drop**: Intuitive file upload interface
-2. **Image Preview**: Visual confirmation of uploaded receipt
-3. **OCR Processing**: Real-time progress indicator
-4. **Results Display**: Extracted items with confidence scores
-5. **Emissions Calculation**: Automatic carbon footprint computation
+### Code Quality
+- **TypeScript**: Strict type checking enabled
+- **ESLint**: Code linting with Next.js configuration
+- **Prettier**: Code formatting
+- **Husky**: Git hooks for pre-commit checks
 
-## 🚀 Deployment
+## Deployment
 
 ### Frontend (Vercel)
-
-1. Connect your repository to Vercel
+1. Connect repository to Vercel
 2. Set environment variables
 3. Deploy automatically on push
 
 ### OCR Service
-
-#### Railway
-```bash
-cd ocr-service
-railway login
-railway init
-railway up
-```
-
-#### Render
-1. Create new Web Service
-2. Set build command: `pip install -r requirements.txt`
-3. Set start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-
-#### Docker
-```bash
-cd ocr-service
-docker build -t emissionary-ocr .
-docker run -p 8000:8000 emissionary-ocr
-```
+Deploy to any Python hosting service:
+- **Railway**: `railway up`
+- **Render**: Web service with Python runtime
+- **Docker**: Containerized deployment
 
 ### Database
+Use Supabase for managed PostgreSQL with:
+- Automatic backups
+- Row-level security
+- Real-time subscriptions
+- Built-in authentication integration
 
-Use Supabase for easy PostgreSQL hosting with automatic backups and scaling.
-
-## 🔒 Security
-
-- **Authentication**: Clerk handles all user authentication
-- **Row Level Security**: Supabase RLS policies protect user data
-- **Input Validation**: Zod schemas validate all API inputs
-- **CORS**: Properly configured for production environments
-
-## 📱 Mobile Support
-
-The application is fully responsive and optimized for mobile devices:
-
-- Touch-friendly upload interface
-- Responsive charts and tables
-- Mobile-optimized navigation
-- Camera integration for receipt capture
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
 ### Development Guidelines
-
 - Follow TypeScript best practices
 - Use Prettier for code formatting
 - Write meaningful commit messages
-- Test your changes thoroughly
+- Test changes thoroughly
 - Update documentation as needed
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Support
 
-- **Canadian Government**: For emissions data and statistics
-- **FAO**: For global food emissions factors
-- **Clerk**: For authentication infrastructure
-- **Supabase**: For database and hosting
-- **shadcn/ui**: For beautiful UI components
-- **Recharts**: For data visualization
-
-## 📞 Support
-
-For support, email support@emissionary.app or join our Discord community.
-
----
-
-**Made with ❤️ for a greener future**
+For support or questions, contact the development team or open an issue on GitHub. 
